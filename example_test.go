@@ -8,7 +8,7 @@ import (
 	"go-simpler.org/slog-gen/slogattr"
 )
 
-//go:generate go run main.go -attr=user_id:int -attr=created_at:time.Time -attr=err:error
+//go:generate go run main.go -config=.slog.yml
 
 func Example() {
 	slog.Info("example",

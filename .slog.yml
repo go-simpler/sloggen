@@ -1,0 +1,11 @@
+# the name for the generated package.
+# default: slogattr
+pkg: slogattr
+
+# the attributes to generate constructors for.
+# format: <attr_name:go_type>
+# default: []
+attrs:
+  user_id: int
+  created_at: time.Time
+  err: error
