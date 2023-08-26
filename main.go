@@ -34,7 +34,7 @@ func run() (err error) {
 		return err
 	}
 
-	if err := os.Mkdir(cfg.Pkg, 0755); err != nil && !errors.Is(err, os.ErrExist) {
+	if err := os.Mkdir(cfg.Pkg, 0o755); err != nil && !errors.Is(err, os.ErrExist) {
 		return fmt.Errorf("mkdir %s: %w", cfg.Pkg, err)
 	}
 
