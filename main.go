@@ -33,14 +33,6 @@ func run() (err error) {
 	if err != nil {
 		return err
 	}
-	cfg.Imports = []string{"log/slog"}
-
-	for _, attr := range cfg.Attrs {
-		if strings.HasPrefix(attr.Type, "time.") {
-			cfg.Imports = append(cfg.Imports, "time")
-			break
-		}
-	}
 
 	if err := os.Mkdir(cfg.Pkg, 0755); err != nil && !errors.Is(err, os.ErrExist) {
 		return fmt.Errorf("mkdir %s: %w", cfg.Pkg, err)
@@ -102,6 +94,7 @@ func loadConfig(path string) (*config, error) {
 		return nil, fmt.Errorf("decoding config: %w", err)
 	}
 
+	cfg.Imports = append(cfg.Imports, "log/slog")
 	sort.Strings(cfg.Imports)
 
 	// TODO: rewrite when maps.Keys() is released.

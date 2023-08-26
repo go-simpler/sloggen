@@ -2,9 +2,15 @@
 # default: slogattr
 pkg: slogattr
 
-# the attributes to generate constructors for.
-# format: <attr_name:go_type>
+# the list of packages to import.
+# should only be filled in if non-basic types are used.
 # default: []
+imports:
+  - time
+
+# the attributes to generate constructors for.
+# format: <key:type>
+# default: {}
 attrs:
   user_id: int
   created_at: time.Time
