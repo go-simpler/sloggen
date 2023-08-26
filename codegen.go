@@ -70,7 +70,7 @@ func readConfig(r io.Reader) (config, error) {
 	}, nil
 }
 
-// nolint:staticcheck // SA1019: strings.Title is deprecated but works just fine here.
+//nolint:staticcheck // SA1019: strings.Title is deprecated but works just fine here.
 var funcs = template.FuncMap{
 	"snakeToCamel": func(s string) string {
 		parts := strings.Split(s, "_")
