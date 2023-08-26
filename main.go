@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -34,8 +35,8 @@ func run() (err error) {
 	}
 	cfg.Imports = []string{"log/slog"}
 
-	for _, typeName := range cfg.Attrs {
-		if strings.HasPrefix(typeName, "time.") {
+	for _, attr := range cfg.Attrs {
+		if strings.HasPrefix(attr.Type, "time.") {
 			cfg.Imports = append(cfg.Imports, "time")
 			break
 		}
@@ -67,18 +68,24 @@ package {{.Pkg}}
 import "{{.}}"
 {{end -}}
 
-{{range $key, $type := .Attrs}}
-func {{snakeToCamel $key}}(value {{$type}}) slog.Attr {
-	return slog.{{slogFunc $type}}("{{$key}}", value)
+{{range $_, $attr := .Attrs}}
+func {{snakeToCamel $attr.Key}}(value {{$attr.Type}}) slog.Attr {
+	return slog.{{slogFunc $attr.Type}}("{{$attr.Key}}", value)
 }
 {{end}}`,
 ))
 
-type config struct {
-	Pkg     string            `yaml:"pkg"`
-	Imports []string          `yaml:"imports"`
-	Attrs   map[string]string `yaml:"attrs"` // key:type
-}
+type (
+	config struct {
+		Pkg     string
+		Imports []string
+		Attrs   []attr
+	}
+	attr struct {
+		Key  string
+		Type string
+	}
+)
 
 func loadConfig(path string) (*config, error) {
 	data, err := os.ReadFile(path)
@@ -86,12 +93,34 @@ func loadConfig(path string) (*config, error) {
 		return nil, fmt.Errorf("reading config: %w", err)
 	}
 
-	var cfg config
+	var cfg struct {
+		Pkg     string            `yaml:"pkg"`
+		Imports []string          `yaml:"imports"`
+		Attrs   map[string]string `yaml:"attrs"` // key:type
+	}
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("decoding config: %w", err)
 	}
 
-	return &cfg, nil
+	sort.Strings(cfg.Imports)
+
+	// TODO: rewrite when maps.Keys() is released.
+	keys := make([]string, 0, len(cfg.Attrs))
+	for key := range cfg.Attrs {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	attrs := make([]attr, len(keys))
+	for i, key := range keys {
+		attrs[i] = attr{Key: key, Type: cfg.Attrs[key]}
+	}
+
+	return &config{
+		Pkg:     cfg.Pkg,
+		Imports: cfg.Imports,
+		Attrs:   attrs,
+	}, nil
 }
 
 var funcs = template.FuncMap{
