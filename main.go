@@ -34,7 +34,7 @@ func run() (err error) {
 		return err
 	}
 
-	if err := os.Mkdir(cfg.Pkg, 0755); err != nil && !errors.Is(err, os.ErrExist) {
+	if err := os.Mkdir(cfg.Pkg, 0o755); err != nil && !errors.Is(err, os.ErrExist) {
 		return fmt.Errorf("mkdir %s: %w", cfg.Pkg, err)
 	}
 
@@ -116,6 +116,7 @@ func loadConfig(path string) (*config, error) {
 	}, nil
 }
 
+// nolint:staticcheck // SA1019: strings.Title is deprecated but works just fine here.
 var funcs = template.FuncMap{
 	"snakeToCamel": func(s string) string {
 		parts := strings.Split(s, "_")
