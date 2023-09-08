@@ -8,6 +8,11 @@ pkg: slogattr
 imports:
   - time
 
+# the list of keys to generate constants for.
+# default: []
+consts:
+  - request_id
+
 # the attributes to generate constructors for.
 # format: <key:type>
 # default: {}

@@ -49,9 +49,5 @@ func run() (err error) {
 	}
 	defer errorsx.Close(genFile, &err)
 
-	if err := tmpl.Execute(genFile, cfg); err != nil {
-		return fmt.Errorf("executing template: %w", err)
-	}
-
-	return nil
+	return writeCode(genFile, cfg)
 }
