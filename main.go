@@ -43,7 +43,7 @@ func run() (err error) {
 		return fmt.Errorf("mkdir: %w", err)
 	}
 
-	genFile, err := os.Create(filepath.Join(cfg.Pkg, "attr.go"))
+	genFile, err := os.Create(filepath.Join(cfg.Pkg, cfg.Pkg+".go"))
 	if err != nil {
 		return fmt.Errorf("creating file: %w", err)
 	}

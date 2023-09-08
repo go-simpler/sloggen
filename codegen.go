@@ -65,19 +65,23 @@ type (
 )
 
 func readConfig(r io.Reader) (*config, error) {
-	var cfg struct {
+	cfg := struct {
 		Pkg     string            `yaml:"pkg"`
 		Imports []string          `yaml:"imports"`
 		Consts  []string          `yaml:"consts"`
 		Attrs   map[string]string `yaml:"attrs"` // key:type
+	}{
+		Pkg: "log",
 	}
 	if err := yaml.NewDecoder(r).Decode(&cfg); err != nil {
 		return nil, fmt.Errorf("decoding config: %w", err)
 	}
 
-	cfg.Imports = append(cfg.Imports, "log/slog")
-	sort.Strings(cfg.Imports)
+	if len(cfg.Attrs) > 0 {
+		cfg.Imports = append(cfg.Imports, "log/slog")
+	}
 
+	sort.Strings(cfg.Imports)
 	sort.Strings(cfg.Consts)
 
 	// TODO: rewrite when maps.Keys() is released.
