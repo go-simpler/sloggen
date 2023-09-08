@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"go/format"
 	"io"
 	"sort"
 	"strings"
@@ -17,7 +19,11 @@ package {{.Pkg}}
 
 {{range .Imports -}}
 import "{{.}}"
-{{end -}}
+{{end}}
+
+{{range .Consts -}}
+const {{snakeToCamel .}} = "{{.}}"
+{{end}}
 
 {{range $_, $attr := .Attrs}}
 func {{snakeToCamel $attr.Key}}(value {{$attr.Type}}) slog.Attr {
@@ -25,50 +31,6 @@ func {{snakeToCamel $attr.Key}}(value {{$attr.Type}}) slog.Attr {
 }
 {{end}}`,
 ))
-
-type (
-	config struct {
-		Pkg     string
-		Imports []string
-		Attrs   []attr
-	}
-	attr struct {
-		Key  string
-		Type string
-	}
-)
-
-func readConfig(r io.Reader) (config, error) {
-	var cfg struct {
-		Pkg     string            `yaml:"pkg"`
-		Imports []string          `yaml:"imports"`
-		Attrs   map[string]string `yaml:"attrs"` // key:type
-	}
-	if err := yaml.NewDecoder(r).Decode(&cfg); err != nil {
-		return config{}, fmt.Errorf("decoding config: %w", err)
-	}
-
-	cfg.Imports = append(cfg.Imports, "log/slog")
-	sort.Strings(cfg.Imports)
-
-	// TODO: rewrite when maps.Keys() is released.
-	keys := make([]string, 0, len(cfg.Attrs))
-	for key := range cfg.Attrs {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-
-	attrs := make([]attr, len(keys))
-	for i, key := range keys {
-		attrs[i] = attr{Key: key, Type: cfg.Attrs[key]}
-	}
-
-	return config{
-		Pkg:     cfg.Pkg,
-		Imports: cfg.Imports,
-		Attrs:   attrs,
-	}, nil
-}
 
 //nolint:staticcheck // SA1019: strings.Title is deprecated but works just fine here.
 var funcs = template.FuncMap{
@@ -87,4 +49,71 @@ var funcs = template.FuncMap{
 			return "Any"
 		}
 	},
+}
+
+type (
+	config struct {
+		Pkg     string
+		Imports []string
+		Consts  []string
+		Attrs   []attr
+	}
+	attr struct {
+		Key  string
+		Type string
+	}
+)
+
+func readConfig(r io.Reader) (*config, error) {
+	var cfg struct {
+		Pkg     string            `yaml:"pkg"`
+		Imports []string          `yaml:"imports"`
+		Consts  []string          `yaml:"consts"`
+		Attrs   map[string]string `yaml:"attrs"` // key:type
+	}
+	if err := yaml.NewDecoder(r).Decode(&cfg); err != nil {
+		return nil, fmt.Errorf("decoding config: %w", err)
+	}
+
+	cfg.Imports = append(cfg.Imports, "log/slog")
+	sort.Strings(cfg.Imports)
+
+	sort.Strings(cfg.Consts)
+
+	// TODO: rewrite when maps.Keys() is released.
+	keys := make([]string, 0, len(cfg.Attrs))
+	for key := range cfg.Attrs {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	attrs := make([]attr, len(keys))
+	for i, key := range keys {
+		attrs[i] = attr{Key: key, Type: cfg.Attrs[key]}
+	}
+
+	return &config{
+		Pkg:     cfg.Pkg,
+		Imports: cfg.Imports,
+		Consts:  cfg.Consts,
+		Attrs:   attrs,
+	}, nil
+}
+
+func writeCode(w io.Writer, cfg *config) error {
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, cfg); err != nil {
+		return fmt.Errorf("executing template: %w", err)
+	}
+
+	src, err := format.Source(buf.Bytes())
+	if err != nil {
+		return fmt.Errorf("formatting code: %w", err)
+	}
+
+	if _, err := w.Write(src); err != nil {
+		return fmt.Errorf("writing code: %w", err)
+	}
+
+	return nil
 }

@@ -5,6 +5,8 @@ package slogattr
 import "log/slog"
 import "time"
 
+const RequestId = "request_id"
+
 func CreatedAt(value time.Time) slog.Attr {
 	return slog.Time("created_at", value)
 }
