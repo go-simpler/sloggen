@@ -1,6 +1,6 @@
 # the name for the generated package.
 # default: log
-pkg: log
+pkg: example
 
 # the list of packages to import.
 # should only be filled in if non-basic types are used.
