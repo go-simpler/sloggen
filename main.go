@@ -10,8 +10,6 @@ import (
 	"go-simpler.org/errorsx"
 )
 
-//go:generate go run main.go codegen.go -config=.slog.yml
-
 func main() {
 	if err := run(); err != nil {
 		fmt.Println(err)
