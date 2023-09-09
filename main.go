@@ -23,6 +23,9 @@ func run() (err error) {
 	fs := flag.NewFlagSet("slog-gen", flag.ContinueOnError)
 	fs.StringVar(&cfgPath, "config", ".slog.yml", "path to config")
 	if err := fs.Parse(os.Args[1:]); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return nil
+		}
 		return fmt.Errorf("parsing flags: %w", err)
 	}
 
