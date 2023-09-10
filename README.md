@@ -37,7 +37,7 @@ Create and fill in the `.slog.yml` config based on the example,
 then add the following directive to any `.go` file and run `go generate ./...`.
 
 ```go
-//go:generate go run go-simpler.org/slog-gen --config=.slog.yml
+//go:generate go run go-simpler.org/slog-gen@latest --config=.slog.yml
 ```
 
 To get started, see the `.slog.example.yml` file and the `example` directory.
