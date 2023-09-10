@@ -9,7 +9,7 @@ import (
 	. "go-simpler.org/assert/dotimport"
 )
 
-//go:generate go run main.go codegen.go -config=.slog.example.yml
+//go:generate go run main.go codegen.go --config=.slog.example.yml
 
 func Test_readConfig(t *testing.T) {
 	r := strings.NewReader(`
