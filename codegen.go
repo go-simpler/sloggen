@@ -92,23 +92,24 @@ func readConfig(r io.Reader) (*config, error) {
 		cfg.Imports = append(cfg.Imports, "log/slog")
 	}
 
+	levels := make([]level, 0, len(cfg.Levels))
+	for name, severity := range cfg.Levels {
+		levels = append(levels, level{Name: name, Severity: severity})
+	}
+
+	attrs := make([]attr, 0, len(cfg.Attrs))
+	for key, typ := range cfg.Attrs {
+		attrs = append(attrs, attr{Key: key, Type: typ})
+	}
+
 	slices.Sort(cfg.Imports)
 	slices.Sort(cfg.Consts)
-
-	names := mapKeys(cfg.Levels)
-	levels := make([]level, len(names))
-	for i, name := range names {
-		levels[i] = level{Name: name, Severity: cfg.Levels[name]}
-	}
-	slices.SortFunc(levels, func(lvl1, lvl2 level) int {
-		return cmp.Compare(lvl1.Severity, lvl2.Severity)
+	slices.SortFunc(levels, func(l1, l2 level) int {
+		return cmp.Compare(l1.Severity, l2.Severity)
 	})
-
-	keys := mapKeys(cfg.Attrs)
-	attrs := make([]attr, len(keys))
-	for i, key := range keys {
-		attrs[i] = attr{Key: key, Type: cfg.Attrs[key]}
-	}
+	slices.SortFunc(attrs, func(a1, a2 attr) int {
+		return cmp.Compare(a1.Key, a2.Key)
+	})
 
 	return &config{
 		Pkg:     cfg.Pkg,
@@ -135,14 +136,4 @@ func writeCode(w io.Writer, cfg *config) error {
 	}
 
 	return nil
-}
-
-// TODO: replace with maps.Keys() when it is released.
-func mapKeys[T any](m map[string]T) []string {
-	keys := make([]string, 0, len(m))
-	for key := range m {
-		keys = append(keys, key)
-	}
-	slices.Sort(keys)
-	return keys
 }
