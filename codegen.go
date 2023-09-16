@@ -2,9 +2,11 @@ package main
 
 import (
 	"bytes"
+	"cmp"
 	"fmt"
 	"go/format"
 	"io"
+	"slices"
 	"sort"
 	"strings"
 	"text/template"
@@ -99,6 +101,9 @@ func readConfig(r io.Reader) (*config, error) {
 	for i, name := range names {
 		levels[i] = level{Name: name, Severity: cfg.Levels[name]}
 	}
+	slices.SortFunc(levels, func(lvl1, lvl2 level) int {
+		return cmp.Compare(lvl1.Severity, lvl2.Severity)
+	})
 
 	keys := mapKeys(cfg.Attrs)
 	attrs := make([]attr, len(keys))
