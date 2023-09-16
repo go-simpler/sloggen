@@ -8,6 +8,16 @@ pkg: example
 imports:
   - time
 
+# the list of levels to generate constants for.
+# format: <name:severity>
+# default: {}
+levels:
+  trace: -8
+  debug: -4
+  info: 0
+  warn: 4
+  error: 8
+
 # the list of keys to generate constants for.
 # default: []
 consts:

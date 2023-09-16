@@ -21,6 +21,10 @@ package {{.Pkg}}
 import "{{.}}"
 {{end}}
 
+{{range $_, $lvl := .Levels -}}
+const Level{{snakeToCamel .Name}} = slog.Level({{.Severity}})
+{{end}}
+
 {{range .Consts -}}
 const {{snakeToCamel .}} = "{{.}}"
 {{end}}
@@ -55,8 +59,13 @@ type (
 	config struct {
 		Pkg     string
 		Imports []string
+		Levels  []level
 		Consts  []string
 		Attrs   []attr
+	}
+	level struct {
+		Name     string
+		Severity int
 	}
 	attr struct {
 		Key  string
@@ -68,6 +77,7 @@ func readConfig(r io.Reader) (*config, error) {
 	cfg := struct {
 		Pkg     string            `yaml:"pkg"`
 		Imports []string          `yaml:"imports"`
+		Levels  map[string]int    `yaml:"levels"` // name:severity
 		Consts  []string          `yaml:"consts"`
 		Attrs   map[string]string `yaml:"attrs"` // key:type
 	}{
@@ -77,20 +87,20 @@ func readConfig(r io.Reader) (*config, error) {
 		return nil, fmt.Errorf("decoding config: %w", err)
 	}
 
-	if len(cfg.Attrs) > 0 {
+	if len(cfg.Attrs) > 0 || len(cfg.Levels) > 0 {
 		cfg.Imports = append(cfg.Imports, "log/slog")
 	}
 
 	sort.Strings(cfg.Imports)
 	sort.Strings(cfg.Consts)
 
-	// TODO: rewrite when maps.Keys() is released.
-	keys := make([]string, 0, len(cfg.Attrs))
-	for key := range cfg.Attrs {
-		keys = append(keys, key)
+	names := mapKeys(cfg.Levels)
+	levels := make([]level, len(names))
+	for i, name := range names {
+		levels[i] = level{Name: name, Severity: cfg.Levels[name]}
 	}
-	sort.Strings(keys)
 
+	keys := mapKeys(cfg.Attrs)
 	attrs := make([]attr, len(keys))
 	for i, key := range keys {
 		attrs[i] = attr{Key: key, Type: cfg.Attrs[key]}
@@ -99,6 +109,7 @@ func readConfig(r io.Reader) (*config, error) {
 	return &config{
 		Pkg:     cfg.Pkg,
 		Imports: cfg.Imports,
+		Levels:  levels,
 		Consts:  cfg.Consts,
 		Attrs:   attrs,
 	}, nil
@@ -120,4 +131,14 @@ func writeCode(w io.Writer, cfg *config) error {
 	}
 
 	return nil
+}
+
+// TODO: replace with maps.Keys() when it is released.
+func mapKeys[T any](m map[string]T) []string {
+	keys := make([]string, 0, len(m))
+	for key := range m {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
 }
