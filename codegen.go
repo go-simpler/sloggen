@@ -7,7 +7,6 @@ import (
 	"go/format"
 	"io"
 	"slices"
-	"sort"
 	"strings"
 	"text/template"
 
@@ -93,8 +92,8 @@ func readConfig(r io.Reader) (*config, error) {
 		cfg.Imports = append(cfg.Imports, "log/slog")
 	}
 
-	sort.Strings(cfg.Imports)
-	sort.Strings(cfg.Consts)
+	slices.Sort(cfg.Imports)
+	slices.Sort(cfg.Consts)
 
 	names := mapKeys(cfg.Levels)
 	levels := make([]level, len(names))
@@ -144,6 +143,6 @@ func mapKeys[T any](m map[string]T) []string {
 	for key := range m {
 		keys = append(keys, key)
 	}
-	sort.Strings(keys)
+	slices.Sort(keys)
 	return keys
 }
