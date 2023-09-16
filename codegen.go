@@ -2,10 +2,11 @@ package main
 
 import (
 	"bytes"
+	"cmp"
 	"fmt"
 	"go/format"
 	"io"
-	"sort"
+	"slices"
 	"strings"
 	"text/template"
 
@@ -19,6 +20,10 @@ package {{.Pkg}}
 
 {{range .Imports -}}
 import "{{.}}"
+{{end}}
+
+{{range $_, $lvl := .Levels -}}
+const Level{{snakeToCamel .Name}} = slog.Level({{.Severity}})
 {{end}}
 
 {{range .Consts -}}
@@ -55,8 +60,13 @@ type (
 	config struct {
 		Pkg     string
 		Imports []string
+		Levels  []level
 		Consts  []string
 		Attrs   []attr
+	}
+	level struct {
+		Name     string
+		Severity int
 	}
 	attr struct {
 		Key  string
@@ -68,6 +78,7 @@ func readConfig(r io.Reader) (*config, error) {
 	cfg := struct {
 		Pkg     string            `yaml:"pkg"`
 		Imports []string          `yaml:"imports"`
+		Levels  map[string]int    `yaml:"levels"` // name:severity
 		Consts  []string          `yaml:"consts"`
 		Attrs   map[string]string `yaml:"attrs"` // key:type
 	}{
@@ -77,28 +88,33 @@ func readConfig(r io.Reader) (*config, error) {
 		return nil, fmt.Errorf("decoding config: %w", err)
 	}
 
-	if len(cfg.Attrs) > 0 {
+	if len(cfg.Attrs) > 0 || len(cfg.Levels) > 0 {
 		cfg.Imports = append(cfg.Imports, "log/slog")
 	}
 
-	sort.Strings(cfg.Imports)
-	sort.Strings(cfg.Consts)
-
-	// TODO: rewrite when maps.Keys() is released.
-	keys := make([]string, 0, len(cfg.Attrs))
-	for key := range cfg.Attrs {
-		keys = append(keys, key)
+	levels := make([]level, 0, len(cfg.Levels))
+	for name, severity := range cfg.Levels {
+		levels = append(levels, level{Name: name, Severity: severity})
 	}
-	sort.Strings(keys)
 
-	attrs := make([]attr, len(keys))
-	for i, key := range keys {
-		attrs[i] = attr{Key: key, Type: cfg.Attrs[key]}
+	attrs := make([]attr, 0, len(cfg.Attrs))
+	for key, typ := range cfg.Attrs {
+		attrs = append(attrs, attr{Key: key, Type: typ})
 	}
+
+	slices.Sort(cfg.Imports)
+	slices.Sort(cfg.Consts)
+	slices.SortFunc(levels, func(l1, l2 level) int {
+		return cmp.Compare(l1.Severity, l2.Severity)
+	})
+	slices.SortFunc(attrs, func(a1, a2 attr) int {
+		return cmp.Compare(a1.Key, a2.Key)
+	})
 
 	return &config{
 		Pkg:     cfg.Pkg,
 		Imports: cfg.Imports,
+		Levels:  levels,
 		Consts:  cfg.Consts,
 		Attrs:   attrs,
 	}, nil

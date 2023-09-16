@@ -15,6 +15,7 @@ func Test_readConfig(t *testing.T) {
 	r := strings.NewReader(`
 pkg: test
 imports: [time]
+levels: {custom: -8}
 consts: [foo]
 attrs:
   bar: time.Time
@@ -24,6 +25,7 @@ attrs:
 	want := &config{
 		Pkg:     "test",
 		Imports: []string{"log/slog", "time"},
+		Levels:  []level{{Name: "custom", Severity: -8}},
 		Consts:  []string{"foo"},
 		Attrs: []attr{
 			{Key: "bar", Type: "time.Time"},
@@ -40,6 +42,7 @@ func Test_writeCode(t *testing.T) {
 	cfg := config{
 		Pkg:     "test",
 		Imports: []string{"log/slog"},
+		Levels:  []level{{Name: "custom", Severity: -8}},
 		Consts:  []string{"foo"},
 		Attrs: []attr{
 			{Key: "bar", Type: "int"},
@@ -52,6 +55,8 @@ func Test_writeCode(t *testing.T) {
 package test
 
 import "log/slog"
+
+const LevelCustom = slog.Level(-8)
 
 const Foo = "foo"
 

@@ -5,6 +5,12 @@ package example
 import "log/slog"
 import "time"
 
+const LevelTrace = slog.Level(-8)
+const LevelDebug = slog.Level(-4)
+const LevelInfo = slog.Level(0)
+const LevelWarn = slog.Level(4)
+const LevelError = slog.Level(8)
+
 const RequestId = "request_id"
 
 func CreatedAt(value time.Time) slog.Attr {
