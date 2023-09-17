@@ -65,13 +65,8 @@ const LevelCustom = slog.Level(-8)
 
 const Foo = "foo"
 
-func Bar(value int) slog.Attr {
-	return slog.Int("bar", value)
-}
-
-func Baz(value error) slog.Attr {
-	return slog.Any("baz", value)
-}
+func Bar(value int) slog.Attr   { return slog.Int("bar", value) }
+func Baz(value error) slog.Attr { return slog.Any("baz", value) }
 
 func ParseLevel(s string) (slog.Level, error) {
 	switch strings.ToUpper(s) {

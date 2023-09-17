@@ -15,17 +15,9 @@ const LevelError = slog.Level(8)
 
 const RequestId = "request_id"
 
-func CreatedAt(value time.Time) slog.Attr {
-	return slog.Time("created_at", value)
-}
-
-func Err(value error) slog.Attr {
-	return slog.Any("err", value)
-}
-
-func UserId(value int) slog.Attr {
-	return slog.Int("user_id", value)
-}
+func CreatedAt(value time.Time) slog.Attr { return slog.Time("created_at", value) }
+func Err(value error) slog.Attr           { return slog.Any("err", value) }
+func UserId(value int) slog.Attr          { return slog.Int("user_id", value) }
 
 func ParseLevel(s string) (slog.Level, error) {
 	switch strings.ToUpper(s) {

@@ -31,10 +31,8 @@ const Level{{snakeToCamel .Name}} = slog.Level({{.Severity}})
 const {{snakeToCamel .}} = "{{.}}"
 {{end}}
 
-{{range .Attrs}}
-func {{snakeToCamel .Key}}(value {{.Type}}) slog.Attr {
-	return slog.{{slogFunc .Type}}("{{.Key}}", value)
-}
+{{range .Attrs -}}
+func {{snakeToCamel .Key}}(value {{.Type}}) slog.Attr { return slog.{{slogFunc .Type}}("{{.Key}}", value) }
 {{end}}
 
 {{if .HasCustomLevels}}
