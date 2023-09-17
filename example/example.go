@@ -2,7 +2,9 @@
 
 package example
 
+import "fmt"
 import "log/slog"
+import "strings"
 import "time"
 
 const LevelTrace = slog.Level(-8)
@@ -23,4 +25,40 @@ func Err(value error) slog.Attr {
 
 func UserId(value int) slog.Attr {
 	return slog.Int("user_id", value)
+}
+
+func ParseLevel(s string) (slog.Level, error) {
+	switch strings.ToUpper(s) {
+	case "TRACE":
+		return LevelTrace, nil
+	case "DEBUG":
+		return LevelDebug, nil
+	case "INFO":
+		return LevelInfo, nil
+	case "WARN":
+		return LevelWarn, nil
+	case "ERROR":
+		return LevelError, nil
+	default:
+		return 0, fmt.Errorf("slog: level string %q: unknown name", s)
+	}
+}
+
+func ReplaceAttr(_ []string, attr slog.Attr) slog.Attr {
+	if attr.Key != slog.LevelKey {
+		return attr
+	}
+	switch attr.Value.Any().(slog.Level) {
+	case LevelTrace:
+		attr.Value = slog.StringValue("TRACE")
+	case LevelDebug:
+		attr.Value = slog.StringValue("DEBUG")
+	case LevelInfo:
+		attr.Value = slog.StringValue("INFO")
+	case LevelWarn:
+		attr.Value = slog.StringValue("WARN")
+	case LevelError:
+		attr.Value = slog.StringValue("ERROR")
+	}
+	return attr
 }

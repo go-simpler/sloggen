@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"go/format"
 	"io"
+	"log/slog"
 	"slices"
 	"strings"
 	"text/template"
@@ -22,7 +23,7 @@ package {{.Pkg}}
 import "{{.}}"
 {{end}}
 
-{{range $_, $lvl := .Levels -}}
+{{range .Levels -}}
 const Level{{snakeToCamel .Name}} = slog.Level({{.Severity}})
 {{end}}
 
@@ -30,15 +31,42 @@ const Level{{snakeToCamel .Name}} = slog.Level({{.Severity}})
 const {{snakeToCamel .}} = "{{.}}"
 {{end}}
 
-{{range $_, $attr := .Attrs}}
-func {{snakeToCamel $attr.Key}}(value {{$attr.Type}}) slog.Attr {
-	return slog.{{slogFunc $attr.Type}}("{{$attr.Key}}", value)
+{{range .Attrs}}
+func {{snakeToCamel .Key}}(value {{.Type}}) slog.Attr {
+	return slog.{{slogFunc .Type}}("{{.Key}}", value)
+}
+{{end}}
+
+{{if .HasCustomLevels}}
+func ParseLevel(s string) (slog.Level, error) {
+	switch strings.ToUpper(s) {
+	{{range .Levels -}}
+	case "{{toUpper .Name}}":
+		return Level{{snakeToCamel .Name}}, nil
+	{{end -}}
+	default:
+		return 0, fmt.Errorf("slog: level string %q: unknown name", s)
+	}
+}
+
+func ReplaceAttr(_ []string, attr slog.Attr) slog.Attr {
+	if attr.Key != slog.LevelKey {
+		return attr
+	}
+	switch attr.Value.Any().(slog.Level) {
+	{{range .Levels -}}
+	case Level{{snakeToCamel .Name}}:
+		attr.Value = slog.StringValue("{{toUpper .Name}}")
+	{{end -}}
+	}
+	return attr
 }
 {{end}}`,
 ))
 
 //nolint:staticcheck // SA1019: strings.Title is deprecated but works just fine here.
 var funcs = template.FuncMap{
+	"toUpper": strings.ToUpper,
 	"snakeToCamel": func(s string) string {
 		parts := strings.Split(s, "_")
 		for i := range parts {
@@ -58,11 +86,12 @@ var funcs = template.FuncMap{
 
 type (
 	config struct {
-		Pkg     string
-		Imports []string
-		Levels  []level
-		Consts  []string
-		Attrs   []attr
+		Pkg             string
+		Imports         []string
+		Levels          []level
+		Consts          []string
+		Attrs           []attr
+		HasCustomLevels bool
 	}
 	level struct {
 		Name     string
@@ -88,18 +117,27 @@ func readConfig(r io.Reader) (*config, error) {
 		return nil, fmt.Errorf("decoding config: %w", err)
 	}
 
-	if len(cfg.Attrs) > 0 || len(cfg.Levels) > 0 {
-		cfg.Imports = append(cfg.Imports, "log/slog")
-	}
+	hasCustomLevels := false
+	slogLevels := []slog.Level{slog.LevelDebug, slog.LevelInfo, slog.LevelWarn, slog.LevelError}
 
 	levels := make([]level, 0, len(cfg.Levels))
 	for name, severity := range cfg.Levels {
 		levels = append(levels, level{Name: name, Severity: severity})
+		if !slices.Contains(slogLevels, slog.Level(severity)) {
+			hasCustomLevels = true
+		}
 	}
 
 	attrs := make([]attr, 0, len(cfg.Attrs))
 	for key, typ := range cfg.Attrs {
 		attrs = append(attrs, attr{Key: key, Type: typ})
+	}
+
+	if len(attrs) > 0 || len(levels) > 0 {
+		cfg.Imports = append(cfg.Imports, "log/slog")
+	}
+	if hasCustomLevels {
+		cfg.Imports = append(cfg.Imports, "fmt", "strings") // for ParseLevel().
 	}
 
 	slices.Sort(cfg.Imports)
@@ -112,11 +150,12 @@ func readConfig(r io.Reader) (*config, error) {
 	})
 
 	return &config{
-		Pkg:     cfg.Pkg,
-		Imports: cfg.Imports,
-		Levels:  levels,
-		Consts:  cfg.Consts,
-		Attrs:   attrs,
+		Pkg:             cfg.Pkg,
+		Imports:         cfg.Imports,
+		Levels:          levels,
+		Consts:          cfg.Consts,
+		Attrs:           attrs,
+		HasCustomLevels: hasCustomLevels,
 	}, nil
 }
 
