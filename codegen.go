@@ -117,36 +117,37 @@ func readConfig(r io.Reader) (*config, error) {
 		return nil, fmt.Errorf("decoding config: %w", err)
 	}
 
-	if len(cfg.Attrs) > 0 || len(cfg.Levels) > 0 {
-		cfg.Imports = append(cfg.Imports, "log/slog")
-	}
+	hasCustomLevels := false
+	slogLevels := []slog.Level{slog.LevelDebug, slog.LevelInfo, slog.LevelWarn, slog.LevelError}
 
 	levels := make([]level, 0, len(cfg.Levels))
 	for name, severity := range cfg.Levels {
 		levels = append(levels, level{Name: name, Severity: severity})
+		if !slices.Contains(slogLevels, slog.Level(severity)) {
+			hasCustomLevels = true
+		}
 	}
-	slices.SortFunc(levels, func(l1, l2 level) int {
-		return cmp.Compare(l1.Severity, l2.Severity)
-	})
 
 	attrs := make([]attr, 0, len(cfg.Attrs))
 	for key, typ := range cfg.Attrs {
 		attrs = append(attrs, attr{Key: key, Type: typ})
 	}
-	slices.SortFunc(attrs, func(a1, a2 attr) int {
-		return cmp.Compare(a1.Key, a2.Key)
-	})
 
-	slogLevels := []slog.Level{slog.LevelDebug, slog.LevelInfo, slog.LevelWarn, slog.LevelError}
-	hasCustomLevels := !slices.EqualFunc(levels, slogLevels, func(l level, sl slog.Level) bool {
-		return l.Severity == int(sl)
-	})
+	if len(attrs) > 0 || len(levels) > 0 {
+		cfg.Imports = append(cfg.Imports, "log/slog")
+	}
 	if hasCustomLevels {
 		cfg.Imports = append(cfg.Imports, "fmt", "strings") // for ParseLevel().
 	}
 
 	slices.Sort(cfg.Imports)
 	slices.Sort(cfg.Consts)
+	slices.SortFunc(levels, func(l1, l2 level) int {
+		return cmp.Compare(l1.Severity, l2.Severity)
+	})
+	slices.SortFunc(attrs, func(a1, a2 attr) int {
+		return cmp.Compare(a1.Key, a2.Key)
+	})
 
 	return &config{
 		Pkg:             cfg.Pkg,
