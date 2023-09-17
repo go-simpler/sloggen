@@ -111,7 +111,7 @@ func readConfig(r io.Reader) (*config, error) {
 		Consts  []string          `yaml:"consts"`
 		Attrs   map[string]string `yaml:"attrs"` // key:type
 	}{
-		Pkg: "log",
+		Pkg: "slogx",
 	}
 	if err := yaml.NewDecoder(r).Decode(&cfg); err != nil {
 		return nil, fmt.Errorf("decoding config: %w", err)

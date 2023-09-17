@@ -1,5 +1,5 @@
 # the name for the generated package.
-# default: log
+# default: slogx
 pkg: example
 
 # the list of packages to import.
