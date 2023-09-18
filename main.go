@@ -20,7 +20,7 @@ func main() {
 func run() (err error) {
 	var cfgPath string
 
-	fs := flag.NewFlagSet("slog-gen", flag.ContinueOnError)
+	fs := flag.NewFlagSet("sloggen", flag.ContinueOnError)
 	fs.StringVar(&cfgPath, "config", ".slog.yml", "path to config")
 	if err := fs.Parse(os.Args[1:]); err != nil {
 		if errors.Is(err, flag.ErrHelp) {

@@ -1,4 +1,4 @@
-module go-simpler.org/slog-gen
+module go-simpler.org/sloggen
 
 go 1.21.0
 

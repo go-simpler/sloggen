@@ -1,9 +1,9 @@
-# slog-gen
+# sloggen
 
-[![checks](https://github.com/go-simpler/slog-gen/actions/workflows/checks.yml/badge.svg)](https://github.com/go-simpler/slog-gen/actions/workflows/checks.yml)
-[![pkg.go.dev](https://pkg.go.dev/badge/go-simpler.org/slog-gen.svg)](https://pkg.go.dev/go-simpler.org/slog-gen)
-[![goreportcard](https://goreportcard.com/badge/go-simpler.org/slog-gen)](https://goreportcard.com/report/go-simpler.org/slog-gen)
-[![codecov](https://codecov.io/gh/go-simpler/slog-gen/branch/main/graph/badge.svg)](https://codecov.io/gh/go-simpler/slog-gen)
+[![checks](https://github.com/go-simpler/sloggen/actions/workflows/checks.yml/badge.svg)](https://github.com/go-simpler/sloggen/actions/workflows/checks.yml)
+[![pkg.go.dev](https://pkg.go.dev/badge/go-simpler.org/sloggen.svg)](https://pkg.go.dev/go-simpler.org/sloggen)
+[![goreportcard](https://goreportcard.com/badge/go-simpler.org/sloggen)](https://goreportcard.com/report/go-simpler.org/sloggen)
+[![codecov](https://codecov.io/gh/go-simpler/sloggen/branch/main/graph/badge.svg)](https://codecov.io/gh/go-simpler/sloggen)
 
 ## 📌 About
 
@@ -28,7 +28,7 @@ func UserId(value int) slog.Attr {
 }
 ```
 
-`slog-gen` generates such code for you based on a simple config (a single source of truth),
+`sloggen` generates such code for you based on a simple config (a single source of truth),
 which makes it easy to share domain-specific helpers between related (micro)services.
 
 ## 📦 Install
@@ -37,7 +37,7 @@ Create and fill in the `.slog.yml` config based on the example,
 then add the following directive to any `.go` file and run `go generate ./...`.
 
 ```go
-//go:generate go run go-simpler.org/slog-gen@latest --config=.slog.yml
+//go:generate go run go-simpler.org/sloggen@latest --config=.slog.yml
 ```
 
 To get started, see the `.slog.example.yml` file and the `example` directory.
