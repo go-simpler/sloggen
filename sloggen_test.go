@@ -12,7 +12,7 @@ import (
 	"go-simpler.org/sloggen/example"
 )
 
-//go:generate go run main.go codegen.go --config=.slog.example.yml
+//go:generate go run main.go sloggen.go --config=.slog.example.yml
 
 func Test_readConfig(t *testing.T) {
 	r := strings.NewReader(`
