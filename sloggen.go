@@ -102,59 +102,63 @@ type (
 )
 
 func readConfig(r io.Reader) (*config, error) {
-	cfg := struct {
-		Pkg     string            `yaml:"pkg"`
-		Imports []string          `yaml:"imports"`
-		Levels  map[string]int    `yaml:"levels"` // name:severity
-		Consts  []string          `yaml:"consts"`
-		Attrs   map[string]string `yaml:"attrs"` // key:type
-	}{
-		Pkg: "slogx",
+	var data struct {
+		Pkg     string              `yaml:"pkg"`
+		Imports []string            `yaml:"imports"`
+		Levels  []map[string]int    `yaml:"levels"` // name:severity
+		Consts  []string            `yaml:"consts"`
+		Attrs   []map[string]string `yaml:"attrs"` // key:type
 	}
-	if err := yaml.NewDecoder(r).Decode(&cfg); err != nil {
+	if err := yaml.NewDecoder(r).Decode(&data); err != nil {
 		return nil, fmt.Errorf("decoding config: %w", err)
 	}
 
-	hasCustomLevels := false
-	slogLevels := []slog.Level{slog.LevelDebug, slog.LevelInfo, slog.LevelWarn, slog.LevelError}
+	cfg := config{
+		Pkg:             data.Pkg,
+		Imports:         data.Imports,
+		Levels:          make([]level, len(data.Levels)),
+		Consts:          data.Consts,
+		Attrs:           make([]attr, len(data.Attrs)),
+		HasCustomLevels: false,
+	}
+	if cfg.Pkg == "" {
+		cfg.Pkg = "slogx"
+	}
 
-	levels := make([]level, 0, len(cfg.Levels))
-	for name, severity := range cfg.Levels {
-		levels = append(levels, level{Name: name, Severity: severity})
-		if !slices.Contains(slogLevels, slog.Level(severity)) {
-			hasCustomLevels = true
+	for i, m := range data.Levels {
+		name, severity := getKV(m)
+		cfg.Levels[i] = level{name, severity}
+
+		switch slog.Level(severity) {
+		case slog.LevelDebug, slog.LevelInfo, slog.LevelWarn, slog.LevelError:
+		default:
+			cfg.HasCustomLevels = true
 		}
 	}
 
-	attrs := make([]attr, 0, len(cfg.Attrs))
-	for key, typ := range cfg.Attrs {
-		attrs = append(attrs, attr{Key: key, Type: typ})
+	for i, m := range data.Attrs {
+		key, typ := getKV(m)
+		cfg.Attrs[i] = attr{key, typ}
 	}
 
-	if len(attrs) > 0 || len(levels) > 0 {
+	if len(cfg.Attrs) > 0 || len(cfg.Levels) > 0 {
 		cfg.Imports = append(cfg.Imports, "log/slog")
 	}
-	if hasCustomLevels {
-		cfg.Imports = append(cfg.Imports, "fmt", "strings") // for ParseLevel().
+	if cfg.HasCustomLevels {
+		cfg.Imports = append(cfg.Imports, "fmt", "strings")
 	}
 
 	slices.Sort(cfg.Imports)
 	slices.Sort(cfg.Consts)
-	slices.SortFunc(levels, func(l1, l2 level) int {
+	slices.SortFunc(cfg.Levels, func(l1, l2 level) int {
 		return cmp.Compare(l1.Severity, l2.Severity)
 	})
-	slices.SortFunc(attrs, func(a1, a2 attr) int {
+	slices.SortFunc(cfg.Attrs, func(a1, a2 attr) int {
 		return cmp.Compare(a1.Key, a2.Key)
 	})
 
-	return &config{
-		Pkg:             cfg.Pkg,
-		Imports:         cfg.Imports,
-		Levels:          levels,
-		Consts:          cfg.Consts,
-		Attrs:           attrs,
-		HasCustomLevels: hasCustomLevels,
-	}, nil
+	cfg.Imports = slices.Compact(cfg.Imports)
+	return &cfg, nil
 }
 
 func writeCode(w io.Writer, cfg *config) error {
@@ -173,4 +177,12 @@ func writeCode(w io.Writer, cfg *config) error {
 	}
 
 	return nil
+}
+
+//nolint:gocritic // unnamedResult: generics false positive.
+func getKV[V any](m map[string]V) (string, V) {
+	for k, v := range m {
+		return k, v
+	}
+	return "", *new(V)
 }
