@@ -2,6 +2,7 @@
 
 package example
 
+import "context"
 import "fmt"
 import "log/slog"
 import "strings"
@@ -53,4 +54,26 @@ func ReplaceAttr(_ []string, attr slog.Attr) slog.Attr {
 		attr.Value = slog.StringValue("ERROR")
 	}
 	return attr
+}
+
+type Logger struct{ *slog.Logger }
+
+func (l *Logger) Trace(ctx context.Context, msg string, attrs ...slog.Attr) {
+	l.Logger.LogAttrs(ctx, LevelTrace, msg, attrs...)
+}
+
+func (l *Logger) Debug(ctx context.Context, msg string, attrs ...slog.Attr) {
+	l.Logger.LogAttrs(ctx, LevelDebug, msg, attrs...)
+}
+
+func (l *Logger) Info(ctx context.Context, msg string, attrs ...slog.Attr) {
+	l.Logger.LogAttrs(ctx, LevelInfo, msg, attrs...)
+}
+
+func (l *Logger) Warn(ctx context.Context, msg string, attrs ...slog.Attr) {
+	l.Logger.LogAttrs(ctx, LevelWarn, msg, attrs...)
+}
+
+func (l *Logger) Error(ctx context.Context, msg string, attrs ...slog.Attr) {
+	l.Logger.LogAttrs(ctx, LevelError, msg, attrs...)
 }
