@@ -10,23 +10,23 @@ imports:
 
 # the list of levels to generate constants for.
 # format: <name:severity>
-# default: {}
+# default: []
 levels:
-  trace: -8
-  debug: -4
-  info: 0
-  warn: 4
-  error: 8
+  - trace: -8
+  - debug: -4
+  - info: 0
+  - warn: 4
+  - error: 8
 
 # the list of keys to generate constants for.
 # default: []
 consts:
   - request_id
 
-# the attributes to generate constructors for.
+# the list of attributes to generate constructors for.
 # format: <key:type>
-# default: {}
+# default: []
 attrs:
-  user_id: int
-  created_at: time.Time
-  err: error
+  - user_id: int
+  - created_at: time.Time
+  - err: error
