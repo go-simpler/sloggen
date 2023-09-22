@@ -24,7 +24,7 @@ import "{{.}}"
 {{end}}
 
 {{range .Levels -}}
-const Level{{snakeToCamel .Name}} = slog.Level({{.Severity}})
+const Level{{title .Name}} = slog.Level({{.Severity}})
 {{end}}
 
 {{range .Consts -}}
@@ -39,8 +39,8 @@ func {{snakeToCamel .Key}}(value {{.Type}}) slog.Attr { return slog.{{slogFunc .
 func ParseLevel(s string) (slog.Level, error) {
 	switch strings.ToUpper(s) {
 	{{range .Levels -}}
-	case "{{toUpper .Name}}":
-		return Level{{snakeToCamel .Name}}, nil
+	case "{{upper .Name}}":
+		return Level{{title .Name}}, nil
 	{{end -}}
 	default:
 		return 0, fmt.Errorf("slog: level string %q: unknown name", s)
@@ -53,18 +53,38 @@ func ReplaceAttr(_ []string, attr slog.Attr) slog.Attr {
 	}
 	switch attr.Value.Any().(slog.Level) {
 	{{range .Levels -}}
-	case Level{{snakeToCamel .Name}}:
-		attr.Value = slog.StringValue("{{toUpper .Name}}")
+	case Level{{title .Name}}:
+		attr.Value = slog.StringValue("{{upper .Name}}")
 	{{end -}}
 	}
 	return attr
+}
+{{end}}
+
+{{if .Logger}}
+type Logger struct{ Logger *slog.Logger }
+{{range .Levels}}
+func (l *Logger) {{title .Name}}({{if $.Logger.Context}}ctx context.Context, {{end}}msg string, {{if $.Logger.AttrAPI}}attrs ...slog.Attr{{else}}args ...any{{end}}) {
+	l.log({{if $.Logger.Context}}ctx{{else}}context.Background(){{end}}, Level{{title .Name}}, msg, {{if $.Logger.AttrAPI}}attrs{{else}}args{{end}})
+}
+{{end}}
+func (l *Logger) log(ctx context.Context, level slog.Level, msg string, {{if $.Logger.AttrAPI}}attrs []slog.Attr{{else}}args []any{{end}}) {
+	if !l.Logger.Enabled(ctx, level) {
+		return
+	}
+	var pcs [1]uintptr
+	runtime.Callers(3, pcs[:])
+	r := slog.NewRecord(time.Now(), level, msg, pcs[0])
+	r.Add{{if $.Logger.AttrAPI}}Attrs(attrs...){{else}}(args...){{end}}
+	_ = l.Logger.Handler().Handle(ctx, r)
 }
 {{end}}`,
 ))
 
 //nolint:staticcheck // SA1019: strings.Title is deprecated but works just fine here.
 var funcs = template.FuncMap{
-	"toUpper": strings.ToUpper,
+	"title": strings.Title,
+	"upper": strings.ToUpper,
 	"snakeToCamel": func(s string) string {
 		parts := strings.Split(s, "_")
 		for i := range parts {
@@ -89,6 +109,7 @@ type (
 		Levels          []level
 		Consts          []string
 		Attrs           []attr
+		Logger          *logger
 		HasCustomLevels bool
 	}
 	level struct {
@@ -99,6 +120,10 @@ type (
 		Key  string
 		Type string
 	}
+	logger struct {
+		AttrAPI bool
+		Context bool
+	}
 )
 
 func readConfig(r io.Reader) (*config, error) {
@@ -108,6 +133,10 @@ func readConfig(r io.Reader) (*config, error) {
 		Levels  []map[string]int    `yaml:"levels"` // name:severity
 		Consts  []string            `yaml:"consts"`
 		Attrs   []map[string]string `yaml:"attrs"` // key:type
+		Logger  *struct {
+			API     string `yaml:"api"`
+			Context bool   `yaml:"context"`
+		} `yaml:"logger"`
 	}
 	if err := yaml.NewDecoder(r).Decode(&data); err != nil {
 		return nil, fmt.Errorf("decoding config: %w", err)
@@ -119,6 +148,7 @@ func readConfig(r io.Reader) (*config, error) {
 		Levels:          make([]level, len(data.Levels)),
 		Consts:          data.Consts,
 		Attrs:           make([]attr, len(data.Attrs)),
+		Logger:          nil,
 		HasCustomLevels: false,
 	}
 	if cfg.Pkg == "" {
@@ -141,11 +171,29 @@ func readConfig(r io.Reader) (*config, error) {
 		cfg.Attrs[i] = attr{key, typ}
 	}
 
-	if len(cfg.Attrs) > 0 || len(cfg.Levels) > 0 {
+	if data.Logger != nil {
+		cfg.Logger = &logger{
+			AttrAPI: false,
+			Context: data.Logger.Context,
+		}
+
+		switch data.Logger.API {
+		case "any":
+		case "attr":
+			cfg.Logger.AttrAPI = true
+		default:
+			return nil, fmt.Errorf("sloggen: %q: invalid logger.api value", data.Logger.API)
+		}
+	}
+
+	if len(cfg.Attrs) > 0 || len(cfg.Levels) > 0 || cfg.Logger != nil {
 		cfg.Imports = append(cfg.Imports, "log/slog")
 	}
 	if cfg.HasCustomLevels {
 		cfg.Imports = append(cfg.Imports, "fmt", "strings")
+	}
+	if cfg.Logger != nil {
+		cfg.Imports = append(cfg.Imports, "context", "runtime")
 	}
 
 	slices.Sort(cfg.Imports)

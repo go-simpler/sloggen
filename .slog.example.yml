@@ -30,3 +30,14 @@ attrs:
   - user_id: int
   - created_at: time.Time
   - err: error
+
+# if present, a wrapper for slog.Logger is generated with a method for each level.
+# TODO: if no levels are specified, the builtin slog levels are used.
+logger:
+  # the API style for methods.
+  # possible values: [any, attr]
+  # default: any
+  api: attr
+  # if true, methods are generated with context.Context as the first parameter.
+  # default: false
+  context: true
