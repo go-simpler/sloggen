@@ -62,12 +62,22 @@ func ReplaceAttr(_ []string, attr slog.Attr) slog.Attr {
 {{end}}
 
 {{if .Logger}}
-type Logger struct{ *slog.Logger }
+type Logger struct{ Logger *slog.Logger }
 {{range .Levels}}
 func (l *Logger) {{title .Name}}({{if $.Logger.Context}}ctx context.Context, {{end}}msg string, {{if $.Logger.AttrAPI}}attrs ...slog.Attr{{else}}args ...any{{end}}) {
-	l.Logger.Log{{if $.Logger.AttrAPI}}Attrs{{end}}({{if $.Logger.Context}}ctx{{else}}context.Background(){{end}}, Level{{title .Name}}, msg, {{if $.Logger.AttrAPI}}attrs...{{else}}args...{{end}})
+	l.log({{if $.Logger.Context}}ctx{{else}}context.Background(){{end}}, Level{{title .Name}}, msg, {{if $.Logger.AttrAPI}}attrs{{else}}args{{end}})
 }
 {{end}}
+func (l *Logger) log(ctx context.Context, level slog.Level, msg string, {{if $.Logger.AttrAPI}}attrs []slog.Attr{{else}}args []any{{end}}) {
+	if !l.Logger.Enabled(ctx, level) {
+		return
+	}
+	var pcs [1]uintptr
+	runtime.Callers(3, pcs[:])
+	r := slog.NewRecord(time.Now(), level, msg, pcs[0])
+	r.Add{{if $.Logger.AttrAPI}}Attrs(attrs...){{else}}(args...){{end}}
+	_ = l.Logger.Handler().Handle(ctx, r)
+}
 {{end}}`,
 ))
 
@@ -183,7 +193,7 @@ func readConfig(r io.Reader) (*config, error) {
 		cfg.Imports = append(cfg.Imports, "fmt", "strings")
 	}
 	if cfg.Logger != nil {
-		cfg.Imports = append(cfg.Imports, "context")
+		cfg.Imports = append(cfg.Imports, "context", "runtime")
 	}
 
 	slices.Sort(cfg.Imports)

@@ -5,6 +5,7 @@ package example
 import "context"
 import "fmt"
 import "log/slog"
+import "runtime"
 import "strings"
 import "time"
 
@@ -56,24 +57,35 @@ func ReplaceAttr(_ []string, attr slog.Attr) slog.Attr {
 	return attr
 }
 
-type Logger struct{ *slog.Logger }
+type Logger struct{ Logger *slog.Logger }
 
 func (l *Logger) Trace(ctx context.Context, msg string, attrs ...slog.Attr) {
-	l.Logger.LogAttrs(ctx, LevelTrace, msg, attrs...)
+	l.log(ctx, LevelTrace, msg, attrs)
 }
 
 func (l *Logger) Debug(ctx context.Context, msg string, attrs ...slog.Attr) {
-	l.Logger.LogAttrs(ctx, LevelDebug, msg, attrs...)
+	l.log(ctx, LevelDebug, msg, attrs)
 }
 
 func (l *Logger) Info(ctx context.Context, msg string, attrs ...slog.Attr) {
-	l.Logger.LogAttrs(ctx, LevelInfo, msg, attrs...)
+	l.log(ctx, LevelInfo, msg, attrs)
 }
 
 func (l *Logger) Warn(ctx context.Context, msg string, attrs ...slog.Attr) {
-	l.Logger.LogAttrs(ctx, LevelWarn, msg, attrs...)
+	l.log(ctx, LevelWarn, msg, attrs)
 }
 
 func (l *Logger) Error(ctx context.Context, msg string, attrs ...slog.Attr) {
-	l.Logger.LogAttrs(ctx, LevelError, msg, attrs...)
+	l.log(ctx, LevelError, msg, attrs)
+}
+
+func (l *Logger) log(ctx context.Context, level slog.Level, msg string, attrs []slog.Attr) {
+	if !l.Logger.Enabled(ctx, level) {
+		return
+	}
+	var pcs [1]uintptr
+	runtime.Callers(3, pcs[:])
+	r := slog.NewRecord(time.Now(), level, msg, pcs[0])
+	r.AddAttrs(attrs...)
+	_ = l.Logger.Handler().Handle(ctx, r)
 }
