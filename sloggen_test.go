@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"log/slog"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -96,8 +97,7 @@ func TestParseLevel(t *testing.T) {
 
 func TestReplaceAttr(t *testing.T) {
 	var buf bytes.Buffer
-
-	logger := slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{
+	handler := slog.NewTextHandler(&buf, &slog.HandlerOptions{
 		Level: example.LevelTrace,
 		ReplaceAttr: func(groups []string, attr slog.Attr) slog.Attr {
 			if attr.Key == slog.TimeKey {
@@ -105,8 +105,30 @@ func TestReplaceAttr(t *testing.T) {
 			}
 			return example.ReplaceAttr(groups, attr)
 		},
-	}))
+	})
 
+	logger := slog.New(handler)
 	logger.Log(context.Background(), example.LevelTrace, "test")
 	assert.Equal[E](t, buf.String(), "level=TRACE msg=test\n")
+}
+
+func TestLogger(t *testing.T) {
+	var buf bytes.Buffer
+	handler := slog.NewTextHandler(&buf, &slog.HandlerOptions{
+		AddSource: true,
+		ReplaceAttr: func(groups []string, attr slog.Attr) slog.Attr {
+			if attr.Key == slog.TimeKey {
+				return slog.Attr{}
+			}
+			if attr.Key == slog.SourceKey {
+				src := attr.Value.Any().(*slog.Source)
+				src.File = filepath.Base(src.File)
+			}
+			return attr
+		},
+	})
+
+	logger := example.Logger{Logger: slog.New(handler)}
+	logger.Info(context.Background(), "test")
+	assert.Equal[E](t, buf.String(), "level=INFO source=sloggen_test.go:132 msg=test\n")
 }
