@@ -36,7 +36,7 @@ const {{snakeToCamel .}} = "{{.}}"
 func {{snakeToCamel $key}}(value {{$type}}) slog.Attr { return slog.{{slogFunc $type}}("{{$key}}", value) }
 {{end}}
 
-{{if $.HasCustomLevels}}
+{{if gt (len $.Levels) 0}}
 func ParseLevel(s string) (slog.Level, error) {
 	switch strings.ToUpper(s) {
 	{{range $_, $name := $.Levels -}}
@@ -66,7 +66,7 @@ func ReplaceAttr(_ []string, attr slog.Attr) slog.Attr {
 type Logger struct{ Logger *slog.Logger }
 {{range $_, $name := $l.Levels}}
 func (l *Logger) {{title $name}}({{if $l.Context}}ctx context.Context, {{end}}msg string, {{if $l.AttrAPI}}attrs ...slog.Attr{{else}}args ...any{{end}}) {
-	l.log({{if $l.Context}}ctx{{else}}context.Background(){{end}}, {{if not $.HasCustomLevels}}slog.{{end}}Level{{title $name}}, msg, {{if $l.AttrAPI}}attrs{{else}}args{{end}})
+	l.log({{if $l.Context}}ctx{{else}}context.Background(){{end}}, {{if eq (len $.Levels) 0}}slog.{{end}}Level{{title $name}}, msg, {{if $l.AttrAPI}}attrs{{else}}args{{end}})
 }
 {{end}}
 func (l *Logger) log(ctx context.Context, level slog.Level, msg string, {{if $l.AttrAPI}}attrs []slog.Attr{{else}}args []any{{end}}) {
@@ -105,13 +105,12 @@ var funcs = template.FuncMap{
 
 type (
 	config struct {
-		Pkg             string
-		Imports         []string
-		Levels          map[int]string // severity:name
-		Consts          []string
-		Attrs           map[string]string // key:type
-		Logger          *logger
-		HasCustomLevels bool
+		Pkg     string
+		Imports []string
+		Levels  map[int]string // severity:name
+		Consts  []string
+		Attrs   map[string]string // key:type
+		Logger  *logger
 	}
 	logger struct {
 		Levels  map[int]string
@@ -137,13 +136,12 @@ func readConfig(r io.Reader) (*config, error) {
 	}
 
 	cfg := config{
-		Pkg:             data.Pkg,
-		Imports:         data.Imports,
-		Levels:          make(map[int]string, len(data.Levels)),
-		Consts:          data.Consts,
-		Attrs:           make(map[string]string, len(data.Attrs)),
-		Logger:          nil,
-		HasCustomLevels: false,
+		Pkg:     data.Pkg,
+		Imports: data.Imports,
+		Levels:  make(map[int]string, len(data.Levels)),
+		Consts:  data.Consts,
+		Attrs:   make(map[string]string, len(data.Attrs)),
+		Logger:  nil,
 	}
 	if cfg.Pkg == "" {
 		cfg.Pkg = "slogx"
@@ -152,12 +150,6 @@ func readConfig(r io.Reader) (*config, error) {
 	for _, m := range data.Levels {
 		name, severity := getKV(m)
 		cfg.Levels[severity] = name
-
-		switch slog.Level(severity) {
-		case slog.LevelDebug, slog.LevelInfo, slog.LevelWarn, slog.LevelError:
-		default:
-			cfg.HasCustomLevels = true
-		}
 	}
 
 	for _, m := range data.Attrs {
@@ -166,12 +158,12 @@ func readConfig(r io.Reader) (*config, error) {
 	}
 
 	if data.Logger != nil {
+		cfg.Imports = append(cfg.Imports, "context", "runtime")
 		cfg.Logger = &logger{
 			Levels:  cfg.Levels,
 			AttrAPI: false,
 			Context: data.Logger.Context,
 		}
-
 		if len(cfg.Levels) == 0 {
 			cfg.Logger.Levels = map[int]string{
 				int(slog.LevelDebug): "debug",
@@ -180,7 +172,6 @@ func readConfig(r io.Reader) (*config, error) {
 				int(slog.LevelError): "error",
 			}
 		}
-
 		switch data.Logger.API {
 		case "any":
 		case "attr":
@@ -193,11 +184,8 @@ func readConfig(r io.Reader) (*config, error) {
 	if len(cfg.Attrs) > 0 || len(cfg.Levels) > 0 || cfg.Logger != nil {
 		cfg.Imports = append(cfg.Imports, "log/slog")
 	}
-	if cfg.HasCustomLevels {
+	if len(cfg.Levels) > 0 {
 		cfg.Imports = append(cfg.Imports, "fmt", "strings")
-	}
-	if cfg.Logger != nil {
-		cfg.Imports = append(cfg.Imports, "context", "runtime")
 	}
 
 	slices.Sort(cfg.Consts)
