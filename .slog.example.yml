@@ -32,7 +32,7 @@ attrs:
   - err: error
 
 # if present, a wrapper for slog.Logger is generated with a method for each level.
-# TODO: if no levels are specified, the builtin slog levels are used.
+# if no levels are specified, the builtin slog levels are used.
 logger:
   # the API style for methods.
   # possible values: [any, attr]
