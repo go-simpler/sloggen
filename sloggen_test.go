@@ -18,11 +18,11 @@ import (
 var cfg = config{
 	Pkg:     "test",
 	Imports: []string{"fmt", "log/slog", "strings", "time"},
-	Levels:  []level{{Name: "custom", Severity: -8}},
+	Levels:  map[int]string{-8: "custom"},
 	Consts:  []string{"foo"},
-	Attrs: []attr{
-		{Key: "bar", Type: "time.Time"},
-		{Key: "baz", Type: "time.Duration"},
+	Attrs: map[string]string{
+		"bar": "time.Time",
+		"baz": "time.Duration",
 	},
 	HasCustomLevels: true,
 }
