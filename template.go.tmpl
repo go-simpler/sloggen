@@ -45,20 +45,65 @@ func ReplaceAttr(_ []string, attr slog.Attr) slog.Attr {
 {{end}}
 
 {{if $l := $.Logger}}
-type Logger struct{ Logger *slog.Logger }
+type Logger struct{ handler slog.Handler }
+
+func New(h slog.Handler) *Logger { return &Logger{handler: h} }
+
+func (l *Logger) Handler() slog.Handler { return l.handler }
+
+func (l *Logger) Enabled(ctx context.Context, level slog.Level) bool {
+	return l.handler.Enabled(ctx, level)
+}
+
+func (l *Logger) With({{if $l.AttrAPI}}attrs ...slog.Attr{{else}}args ...any{{end}}) *Logger {
+	if len({{if $l.AttrAPI}}attrs{{else}}args{{end}}) == 0 {
+		return l
+	}
+	return &Logger{handler: l.handler.WithAttrs({{if $l.AttrAPI}}attrs{{else}}args2attrs(args){{end}})}
+}
+
+func (l *Logger) WithGroup(name string) *Logger {
+	if name == "" {
+		return l
+	}
+	return &Logger{handler: l.handler.WithGroup(name)}
+}
+
 {{range $_, $name := $l.Levels}}
 func (l *Logger) {{title $name}}({{if $l.Context}}ctx context.Context, {{end}}msg string, {{if $l.AttrAPI}}attrs ...slog.Attr{{else}}args ...any{{end}}) {
 	l.log({{if $l.Context}}ctx{{else}}context.Background(){{end}}, {{if eq (len $.Levels) 0}}slog.{{end}}Level{{title $name}}, msg, {{if $l.AttrAPI}}attrs{{else}}args{{end}})
 }
 {{end}}
 func (l *Logger) log(ctx context.Context, level slog.Level, msg string, {{if $l.AttrAPI}}attrs []slog.Attr{{else}}args []any{{end}}) {
-	if !l.Logger.Enabled(ctx, level) {
+	if !l.handler.Enabled(ctx, level) {
 		return
 	}
 	var pcs [1]uintptr
 	runtime.Callers(3, pcs[:])
 	r := slog.NewRecord(time.Now(), level, msg, pcs[0])
 	r.Add{{if $l.AttrAPI}}Attrs(attrs...){{else}}(args...){{end}}
-	_ = l.Logger.Handler().Handle(ctx, r)
+	_ = l.handler.Handle(ctx, r)
 }
+
+{{if not $l.AttrAPI}}
+{{/* based on argsToAttrSlice() and argsToAttr() from log/slog sources. */}}
+func args2attrs(args []any) []slog.Attr {
+	var attrs []slog.Attr
+	for len(args) > 0 {
+		switch x := args[0].(type) {
+		case string:
+			if len(args) == 1 {
+				attrs, args = append(attrs, slog.String("!BADKEY", x)), nil
+			} else {
+				attrs, args = append(attrs, slog.Any(x, args[1])), args[2:]
+			}
+		case slog.Attr:
+			attrs, args = append(attrs, x), args[1:]
+		default:
+			attrs, args = append(attrs, slog.Any("!BADKEY", x)), args[1:]
+		}
+	}
+	return attrs
+}
+{{end}}
 {{end}}

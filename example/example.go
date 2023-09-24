@@ -57,7 +57,29 @@ func ReplaceAttr(_ []string, attr slog.Attr) slog.Attr {
 	return attr
 }
 
-type Logger struct{ Logger *slog.Logger }
+type Logger struct{ handler slog.Handler }
+
+func New(h slog.Handler) *Logger { return &Logger{handler: h} }
+
+func (l *Logger) Handler() slog.Handler { return l.handler }
+
+func (l *Logger) Enabled(ctx context.Context, level slog.Level) bool {
+	return l.handler.Enabled(ctx, level)
+}
+
+func (l *Logger) With(attrs ...slog.Attr) *Logger {
+	if len(attrs) == 0 {
+		return l
+	}
+	return &Logger{handler: l.handler.WithAttrs(attrs)}
+}
+
+func (l *Logger) WithGroup(name string) *Logger {
+	if name == "" {
+		return l
+	}
+	return &Logger{handler: l.handler.WithGroup(name)}
+}
 
 func (l *Logger) Trace(ctx context.Context, msg string, attrs ...slog.Attr) {
 	l.log(ctx, LevelTrace, msg, attrs)
@@ -80,12 +102,12 @@ func (l *Logger) Error(ctx context.Context, msg string, attrs ...slog.Attr) {
 }
 
 func (l *Logger) log(ctx context.Context, level slog.Level, msg string, attrs []slog.Attr) {
-	if !l.Logger.Enabled(ctx, level) {
+	if !l.handler.Enabled(ctx, level) {
 		return
 	}
 	var pcs [1]uintptr
 	runtime.Callers(3, pcs[:])
 	r := slog.NewRecord(time.Now(), level, msg, pcs[0])
 	r.AddAttrs(attrs...)
-	_ = l.Logger.Handler().Handle(ctx, r)
+	_ = l.handler.Handle(ctx, r)
 }

@@ -127,7 +127,7 @@ func TestLogger(t *testing.T) {
 		},
 	})
 
-	logger := example.Logger{Logger: slog.New(handler)}
+	logger := example.New(handler)
 	logger.Info(context.Background(), "test")
 	assert.Equal[E](t, buf.String(), "level=INFO source=sloggen_test.go:131 msg=test\n")
 }
