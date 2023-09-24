@@ -78,6 +78,7 @@ func (l *Logger) {{title $name}}({{if $l.Context}}ctx context.Context, {{end}}ms
 	l.log({{if $l.Context}}ctx{{else}}context.Background(){{end}}, {{if eq (len $.Levels) 0}}slog.{{end}}Level{{title $name}}, msg, {{if $l.AttrAPI}}attrs{{else}}args{{end}})
 }
 {{end}}
+
 func (l *Logger) log(ctx context.Context, level slog.Level, msg string, {{if $l.AttrAPI}}attrs []slog.Attr{{else}}args []any{{end}}) {
 	if !l.handler.Enabled(ctx, level) {
 		return
