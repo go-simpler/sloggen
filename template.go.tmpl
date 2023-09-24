@@ -11,11 +11,11 @@ const Level{{title $name}} = slog.Level({{$severity}})
 {{end}}
 
 {{range $.Consts -}}
-const {{snakeToCamel .}} = "{{.}}"
+const {{camel .}} = "{{.}}"
 {{end}}
 
 {{range $key, $type := $.Attrs -}}
-func {{snakeToCamel $key}}(value {{$type}}) slog.Attr { return slog.{{slogFunc $type}}("{{$key}}", value) }
+func {{camel $key}}(value {{$type}}) slog.Attr { return slog.{{slogFunc $type}}("{{$key}}", value) }
 {{end}}
 
 {{if gt (len $.Levels) 0}}

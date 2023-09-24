@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	//go:embed main.tmpl
+	//go:embed template.go.tmpl
 	src  string
 	tmpl = template.Must(template.New("").Funcs(funcs).Parse(src))
 
@@ -23,7 +23,7 @@ var (
 	funcs = template.FuncMap{
 		"title": strings.Title,
 		"upper": strings.ToUpper,
-		"snakeToCamel": func(s string) string {
+		"camel": func(s string) string {
 			parts := strings.Split(s, "_")
 			for i := range parts {
 				parts[i] = strings.Title(parts[i])
