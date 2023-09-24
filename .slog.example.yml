@@ -12,11 +12,8 @@ imports:
 # format: <name:severity>
 # default: []
 levels:
-  - trace: -8
-  - debug: -4
   - info: 0
-  - warn: 4
-  - error: 8
+  - alert: 1
 
 # the list of keys to generate constants for.
 # default: []

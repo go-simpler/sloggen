@@ -18,7 +18,7 @@ import (
 var cfg = config{
 	Pkg:     "test",
 	Imports: []string{"fmt", "log/slog", "strings", "time"},
-	Levels:  map[int]string{-8: "custom"},
+	Levels:  map[int]string{1: "custom"},
 	Consts:  []string{"foo"},
 	Attrs: map[string]string{
 		"bar": "time.Time",
@@ -32,7 +32,7 @@ pkg: test
 imports:
   - time
 levels:
-  - custom: -8
+  - custom: 1
 consts:
   - foo
 attrs:
@@ -55,7 +55,7 @@ import "log/slog"
 import "strings"
 import "time"
 
-const LevelCustom = slog.Level(-8)
+const LevelCustom = slog.Level(1)
 
 const Foo = "foo"
 
@@ -89,15 +89,14 @@ func ReplaceAttr(_ []string, attr slog.Attr) slog.Attr {
 }
 
 func TestParseLevel(t *testing.T) {
-	level, err := example.ParseLevel("TRACE")
+	level, err := example.ParseLevel("ALERT")
 	assert.NoErr[F](t, err)
-	assert.Equal[E](t, level, example.LevelTrace)
+	assert.Equal[E](t, level, example.LevelAlert)
 }
 
 func TestReplaceAttr(t *testing.T) {
 	var buf bytes.Buffer
 	handler := slog.NewTextHandler(&buf, &slog.HandlerOptions{
-		Level: example.LevelTrace,
 		ReplaceAttr: func(groups []string, attr slog.Attr) slog.Attr {
 			if attr.Key == slog.TimeKey {
 				return slog.Attr{}
@@ -107,8 +106,8 @@ func TestReplaceAttr(t *testing.T) {
 	})
 
 	logger := slog.New(handler)
-	logger.Log(context.Background(), example.LevelTrace, "test")
-	assert.Equal[E](t, buf.String(), "level=TRACE msg=test\n")
+	logger.Log(context.Background(), example.LevelAlert, "test")
+	assert.Equal[E](t, buf.String(), "level=ALERT msg=test\n")
 }
 
 func TestLogger(t *testing.T) {
@@ -123,11 +122,15 @@ func TestLogger(t *testing.T) {
 				src := attr.Value.Any().(*slog.Source)
 				src.File = filepath.Base(src.File)
 			}
-			return attr
+			return example.ReplaceAttr(groups, attr)
 		},
 	})
 
 	logger := example.New(handler)
-	logger.Info(context.Background(), "test")
-	assert.Equal[E](t, buf.String(), "level=INFO source=sloggen_test.go:131 msg=test\n")
+	logger.Info(context.Background(), "test1")
+	logger.Alert(context.Background(), "test2")
+	assert.Equal[E](t, "\n"+buf.String(), `
+level=INFO source=sloggen_test.go:130 msg=test1
+level=ALERT source=sloggen_test.go:131 msg=test2
+`)
 }
