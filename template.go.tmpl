@@ -69,6 +69,10 @@ func (l *Logger) WithGroup(name string) *Logger {
 	return &Logger{handler: l.handler.WithGroup(name)}
 }
 
+func (l *Logger) Log({{if $l.Context}}ctx context.Context, {{end}}level slog.Level, msg string, {{if $l.AttrAPI}}attrs ...slog.Attr{{else}}args ...any{{end}}) {
+	l.log({{if $l.Context}}ctx{{else}}context.Background(){{end}}, level, msg, {{if $l.AttrAPI}}attrs{{else}}args{{end}})
+}
+
 {{range $_, $name := $l.Levels}}
 func (l *Logger) {{title $name}}({{if $l.Context}}ctx context.Context, {{end}}msg string, {{if $l.AttrAPI}}attrs ...slog.Attr{{else}}args ...any{{end}}) {
 	l.log({{if $l.Context}}ctx{{else}}context.Background(){{end}}, {{if eq (len $.Levels) 0}}slog.{{end}}Level{{title $name}}, msg, {{if $l.AttrAPI}}attrs{{else}}args{{end}})

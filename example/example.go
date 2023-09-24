@@ -81,6 +81,10 @@ func (l *Logger) WithGroup(name string) *Logger {
 	return &Logger{handler: l.handler.WithGroup(name)}
 }
 
+func (l *Logger) Log(ctx context.Context, level slog.Level, msg string, attrs ...slog.Attr) {
+	l.log(ctx, level, msg, attrs)
+}
+
 func (l *Logger) Trace(ctx context.Context, msg string, attrs ...slog.Attr) {
 	l.log(ctx, LevelTrace, msg, attrs)
 }
