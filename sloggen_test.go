@@ -88,49 +88,43 @@ func ReplaceAttr(_ []string, attr slog.Attr) slog.Attr {
 	assert.Equal[E](t, buf.String(), src)
 }
 
-func TestParseLevel(t *testing.T) {
+func TestExample(t *testing.T) {
+	replaceAttr := func(groups []string, attr slog.Attr) slog.Attr {
+		if attr.Key == slog.TimeKey {
+			return slog.Attr{}
+		}
+		if attr.Key == slog.SourceKey {
+			src := attr.Value.Any().(*slog.Source)
+			src.File = filepath.Base(src.File)
+		}
+		return example.ReplaceAttr(groups, attr)
+	}
+
+	var buf bytes.Buffer
+	handler := slog.NewTextHandler(&buf, &slog.HandlerOptions{
+		AddSource:   true,
+		Level:       example.LevelInfo,
+		ReplaceAttr: replaceAttr,
+	})
+
+	logger := example.New(handler).
+		WithGroup("group").
+		With(slog.String("key", "value"))
+
 	level, err := example.ParseLevel("ALERT")
 	assert.NoErr[F](t, err)
 	assert.Equal[E](t, level, example.LevelAlert)
-}
 
-func TestReplaceAttr(t *testing.T) {
-	var buf bytes.Buffer
-	handler := slog.NewTextHandler(&buf, &slog.HandlerOptions{
-		ReplaceAttr: func(groups []string, attr slog.Attr) slog.Attr {
-			if attr.Key == slog.TimeKey {
-				return slog.Attr{}
-			}
-			return example.ReplaceAttr(groups, attr)
-		},
-	})
+	ctx := context.Background()
+	enabled := logger.Enabled(ctx, level)
+	assert.Equal[E](t, enabled, true)
 
-	logger := slog.New(handler)
-	logger.Log(context.Background(), example.LevelAlert, "test")
-	assert.Equal[E](t, buf.String(), "level=ALERT msg=test\n")
-}
-
-func TestLogger(t *testing.T) {
-	var buf bytes.Buffer
-	handler := slog.NewTextHandler(&buf, &slog.HandlerOptions{
-		AddSource: true,
-		ReplaceAttr: func(groups []string, attr slog.Attr) slog.Attr {
-			if attr.Key == slog.TimeKey {
-				return slog.Attr{}
-			}
-			if attr.Key == slog.SourceKey {
-				src := attr.Value.Any().(*slog.Source)
-				src.File = filepath.Base(src.File)
-			}
-			return example.ReplaceAttr(groups, attr)
-		},
-	})
-
-	logger := example.New(handler)
-	logger.Info(context.Background(), "test1")
-	logger.Alert(context.Background(), "test2")
+	logger.Info(ctx, "foo")
+	logger.Alert(ctx, "bar")
+	logger.Log(ctx, level, "baz")
 	assert.Equal[E](t, "\n"+buf.String(), `
-level=INFO source=sloggen_test.go:130 msg=test1
-level=ALERT source=sloggen_test.go:131 msg=test2
+level=INFO source=sloggen_test.go:122 msg=foo group.key=value
+level=ALERT source=sloggen_test.go:123 msg=bar group.key=value
+level=ALERT source=sloggen_test.go:124 msg=baz group.key=value
 `)
 }
