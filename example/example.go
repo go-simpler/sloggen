@@ -9,11 +9,8 @@ import "runtime"
 import "strings"
 import "time"
 
-const LevelTrace = slog.Level(-8)
-const LevelDebug = slog.Level(-4)
 const LevelInfo = slog.Level(0)
-const LevelWarn = slog.Level(4)
-const LevelError = slog.Level(8)
+const LevelAlert = slog.Level(1)
 
 const RequestId = "request_id"
 
@@ -23,16 +20,10 @@ func UserId(value int) slog.Attr          { return slog.Int("user_id", value) }
 
 func ParseLevel(s string) (slog.Level, error) {
 	switch strings.ToUpper(s) {
-	case "TRACE":
-		return LevelTrace, nil
-	case "DEBUG":
-		return LevelDebug, nil
 	case "INFO":
 		return LevelInfo, nil
-	case "WARN":
-		return LevelWarn, nil
-	case "ERROR":
-		return LevelError, nil
+	case "ALERT":
+		return LevelAlert, nil
 	default:
 		return 0, fmt.Errorf("slog: level string %q: unknown name", s)
 	}
@@ -43,49 +34,57 @@ func ReplaceAttr(_ []string, attr slog.Attr) slog.Attr {
 		return attr
 	}
 	switch attr.Value.Any().(slog.Level) {
-	case LevelTrace:
-		attr.Value = slog.StringValue("TRACE")
-	case LevelDebug:
-		attr.Value = slog.StringValue("DEBUG")
 	case LevelInfo:
 		attr.Value = slog.StringValue("INFO")
-	case LevelWarn:
-		attr.Value = slog.StringValue("WARN")
-	case LevelError:
-		attr.Value = slog.StringValue("ERROR")
+	case LevelAlert:
+		attr.Value = slog.StringValue("ALERT")
 	}
 	return attr
 }
 
-type Logger struct{ Logger *slog.Logger }
+type Logger struct{ handler slog.Handler }
 
-func (l *Logger) Trace(ctx context.Context, msg string, attrs ...slog.Attr) {
-	l.log(ctx, LevelTrace, msg, attrs)
+func New(h slog.Handler) *Logger { return &Logger{handler: h} }
+
+func (l *Logger) Handler() slog.Handler { return l.handler }
+
+func (l *Logger) Enabled(ctx context.Context, level slog.Level) bool {
+	return l.handler.Enabled(ctx, level)
 }
 
-func (l *Logger) Debug(ctx context.Context, msg string, attrs ...slog.Attr) {
-	l.log(ctx, LevelDebug, msg, attrs)
+func (l *Logger) With(attrs ...slog.Attr) *Logger {
+	if len(attrs) == 0 {
+		return l
+	}
+	return &Logger{handler: l.handler.WithAttrs(attrs)}
+}
+
+func (l *Logger) WithGroup(name string) *Logger {
+	if name == "" {
+		return l
+	}
+	return &Logger{handler: l.handler.WithGroup(name)}
+}
+
+func (l *Logger) Log(ctx context.Context, level slog.Level, msg string, attrs ...slog.Attr) {
+	l.log(ctx, level, msg, attrs)
 }
 
 func (l *Logger) Info(ctx context.Context, msg string, attrs ...slog.Attr) {
 	l.log(ctx, LevelInfo, msg, attrs)
 }
 
-func (l *Logger) Warn(ctx context.Context, msg string, attrs ...slog.Attr) {
-	l.log(ctx, LevelWarn, msg, attrs)
-}
-
-func (l *Logger) Error(ctx context.Context, msg string, attrs ...slog.Attr) {
-	l.log(ctx, LevelError, msg, attrs)
+func (l *Logger) Alert(ctx context.Context, msg string, attrs ...slog.Attr) {
+	l.log(ctx, LevelAlert, msg, attrs)
 }
 
 func (l *Logger) log(ctx context.Context, level slog.Level, msg string, attrs []slog.Attr) {
-	if !l.Logger.Enabled(ctx, level) {
+	if !l.handler.Enabled(ctx, level) {
 		return
 	}
 	var pcs [1]uintptr
 	runtime.Callers(3, pcs[:])
 	r := slog.NewRecord(time.Now(), level, msg, pcs[0])
 	r.AddAttrs(attrs...)
-	_ = l.Logger.Handler().Handle(ctx, r)
+	_ = l.handler.Handle(ctx, r)
 }

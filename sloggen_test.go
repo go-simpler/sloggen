@@ -18,7 +18,7 @@ import (
 var cfg = config{
 	Pkg:     "test",
 	Imports: []string{"fmt", "log/slog", "strings", "time"},
-	Levels:  map[int]string{-8: "custom"},
+	Levels:  map[int]string{1: "custom"},
 	Consts:  []string{"foo"},
 	Attrs: map[string]string{
 		"bar": "time.Time",
@@ -32,7 +32,7 @@ pkg: test
 imports:
   - time
 levels:
-  - custom: -8
+  - custom: 1
 consts:
   - foo
 attrs:
@@ -55,7 +55,7 @@ import "log/slog"
 import "strings"
 import "time"
 
-const LevelCustom = slog.Level(-8)
+const LevelCustom = slog.Level(1)
 
 const Foo = "foo"
 
@@ -88,46 +88,43 @@ func ReplaceAttr(_ []string, attr slog.Attr) slog.Attr {
 	assert.Equal[E](t, buf.String(), src)
 }
 
-func TestParseLevel(t *testing.T) {
-	level, err := example.ParseLevel("TRACE")
+func TestExample(t *testing.T) {
+	replaceAttr := func(groups []string, attr slog.Attr) slog.Attr {
+		if attr.Key == slog.TimeKey {
+			return slog.Attr{}
+		}
+		if attr.Key == slog.SourceKey {
+			src := attr.Value.Any().(*slog.Source)
+			src.File = filepath.Base(src.File)
+		}
+		return example.ReplaceAttr(groups, attr)
+	}
+
+	var buf bytes.Buffer
+	handler := slog.NewTextHandler(&buf, &slog.HandlerOptions{
+		AddSource:   true,
+		Level:       example.LevelInfo,
+		ReplaceAttr: replaceAttr,
+	})
+
+	logger := example.New(handler).
+		WithGroup("group").
+		With(slog.String("key", "value"))
+
+	level, err := example.ParseLevel("ALERT")
 	assert.NoErr[F](t, err)
-	assert.Equal[E](t, level, example.LevelTrace)
-}
+	assert.Equal[E](t, level, example.LevelAlert)
 
-func TestReplaceAttr(t *testing.T) {
-	var buf bytes.Buffer
-	handler := slog.NewTextHandler(&buf, &slog.HandlerOptions{
-		Level: example.LevelTrace,
-		ReplaceAttr: func(groups []string, attr slog.Attr) slog.Attr {
-			if attr.Key == slog.TimeKey {
-				return slog.Attr{}
-			}
-			return example.ReplaceAttr(groups, attr)
-		},
-	})
+	ctx := context.Background()
+	enabled := logger.Enabled(ctx, level)
+	assert.Equal[E](t, enabled, true)
 
-	logger := slog.New(handler)
-	logger.Log(context.Background(), example.LevelTrace, "test")
-	assert.Equal[E](t, buf.String(), "level=TRACE msg=test\n")
-}
-
-func TestLogger(t *testing.T) {
-	var buf bytes.Buffer
-	handler := slog.NewTextHandler(&buf, &slog.HandlerOptions{
-		AddSource: true,
-		ReplaceAttr: func(groups []string, attr slog.Attr) slog.Attr {
-			if attr.Key == slog.TimeKey {
-				return slog.Attr{}
-			}
-			if attr.Key == slog.SourceKey {
-				src := attr.Value.Any().(*slog.Source)
-				src.File = filepath.Base(src.File)
-			}
-			return attr
-		},
-	})
-
-	logger := example.Logger{Logger: slog.New(handler)}
-	logger.Info(context.Background(), "test")
-	assert.Equal[E](t, buf.String(), "level=INFO source=sloggen_test.go:131 msg=test\n")
+	logger.Info(ctx, "foo")
+	logger.Alert(ctx, "bar")
+	logger.Log(ctx, level, "baz")
+	assert.Equal[E](t, "\n"+buf.String(), `
+level=INFO source=sloggen_test.go:122 msg=foo group.key=value
+level=ALERT source=sloggen_test.go:123 msg=bar group.key=value
+level=ALERT source=sloggen_test.go:124 msg=baz group.key=value
+`)
 }
