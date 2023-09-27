@@ -12,6 +12,9 @@ import (
 
 func main() {
 	if err := run(); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			os.Exit(0)
+		}
 		fmt.Println(err)
 		os.Exit(1)
 	}
@@ -23,9 +26,6 @@ func run() (err error) {
 	fs := flag.NewFlagSet("sloggen", flag.ContinueOnError)
 	fs.StringVar(&cfgPath, "config", ".slog.yml", "path to config")
 	if err := fs.Parse(os.Args[1:]); err != nil {
-		if errors.Is(err, flag.ErrHelp) {
-			return nil
-		}
 		return fmt.Errorf("parsing flags: %w", err)
 	}
 
@@ -35,7 +35,7 @@ func run() (err error) {
 	}
 	defer errorsx.Close(cfgFile, &err)
 
-	cfg, err := readConfig(cfgFile)
+	cfg, err := readConfig(cfgFile, os.Args[1:])
 	if err != nil {
 		return err
 	}

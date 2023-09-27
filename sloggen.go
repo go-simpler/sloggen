@@ -3,11 +3,13 @@ package main
 import (
 	"bytes"
 	_ "embed"
+	"flag"
 	"fmt"
 	"go/format"
 	"io"
 	"log/slog"
 	"slices"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -58,7 +60,7 @@ type (
 	}
 )
 
-func readConfig(r io.Reader) (*config, error) {
+func readConfig(r io.Reader, args []string) (*config, error) {
 	var data struct {
 		Pkg     string              `yaml:"pkg"`
 		Imports []string            `yaml:"imports"`
@@ -66,12 +68,65 @@ func readConfig(r io.Reader) (*config, error) {
 		Consts  []string            `yaml:"consts"`
 		Attrs   []map[string]string `yaml:"attrs"`
 		Logger  *struct {
-			API     string `yaml:"api"`
-			Context bool   `yaml:"context"`
+			API string `yaml:"api"`
+			Ctx bool   `yaml:"ctx"`
 		} `yaml:"logger"`
 	}
 	if err := yaml.NewDecoder(r).Decode(&data); err != nil {
 		return nil, fmt.Errorf("decoding config: %w", err)
+	}
+
+	fs := flag.NewFlagSet("sloggen", flag.ContinueOnError)
+	fs.StringVar(&data.Pkg, "pkg", "slogx", "set package name")
+	fs.Func("i", "add import", func(s string) error {
+		data.Imports = append(data.Imports, s)
+		return nil
+	})
+	fs.Func("l", "add level (name:severity)", func(s string) error {
+		parts := strings.Split(s, ":")
+		if len(parts) != 2 {
+			return fmt.Errorf("sloggen: -l=%s: invalid value", s)
+		}
+		i, err := strconv.Atoi(parts[1])
+		if err != nil {
+			return fmt.Errorf("parsing severity: %w", err)
+		}
+		data.Levels = append(data.Levels, map[string]int{parts[0]: i})
+		return nil
+	})
+	fs.Func("c", "add constant", func(s string) error {
+		data.Consts = append(data.Consts, s)
+		return nil
+	})
+	fs.Func("a", "add attribute (key:type)", func(s string) error {
+		parts := strings.Split(s, ":")
+		if len(parts) != 2 {
+			return fmt.Errorf("sloggen: -a=%s: invalid value", s)
+		}
+		data.Attrs = append(data.Attrs, map[string]string{parts[0]: parts[1]})
+		return nil
+	})
+	fs.BoolFunc("logger", "add Logger type (default false)", func(string) error {
+		data.Logger = new(struct {
+			API string `yaml:"api"`
+			Ctx bool   `yaml:"ctx"`
+		})
+		return nil
+	})
+	fs.Func("api", `set API style for Logger methods ("any" | "attr") (default "any")`, func(s string) error {
+		if data.Logger != nil {
+			data.Logger.API = s
+		}
+		return nil
+	})
+	fs.BoolFunc("ctx", "add context.Context to Logger methods (default false)", func(string) error {
+		if data.Logger != nil {
+			data.Logger.Ctx = true
+		}
+		return nil
+	})
+	if err := fs.Parse(args); err != nil {
+		return nil, fmt.Errorf("parsing flags: %w", err)
 	}
 
 	cfg := config{
@@ -81,9 +136,6 @@ func readConfig(r io.Reader) (*config, error) {
 		Consts:  data.Consts,
 		Attrs:   make(map[string]string, len(data.Attrs)),
 		Logger:  nil,
-	}
-	if cfg.Pkg == "" {
-		cfg.Pkg = "slogx"
 	}
 
 	for _, m := range data.Levels {
@@ -101,7 +153,7 @@ func readConfig(r io.Reader) (*config, error) {
 		cfg.Logger = &logger{
 			Levels:  cfg.Levels,
 			AttrAPI: false,
-			Context: data.Logger.Context,
+			Context: data.Logger.Ctx,
 		}
 		if len(cfg.Levels) == 0 {
 			cfg.Logger.Levels = map[int]string{

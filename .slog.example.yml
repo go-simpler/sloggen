@@ -28,7 +28,7 @@ attrs:
   - created_at: time.Time
   - err: error
 
-# if present, a wrapper for slog.Logger is generated with a method for each level.
+# if present, a custom Logger type is generated with a method for each level.
 # if no levels are specified, the builtin slog levels are used.
 logger:
   # the API style for methods.
@@ -37,4 +37,4 @@ logger:
   api: attr
   # if true, methods are generated with context.Context as the first parameter.
   # default: false
-  context: true
+  ctx: true
