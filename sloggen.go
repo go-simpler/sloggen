@@ -86,7 +86,11 @@ func (c *config) prepare() {
 }
 
 func readFlags(args []string) (*config, error) {
-	var cfg config
+	cfg := config{
+		Levels: make(map[int]string),
+		Attrs:  make(map[string]string),
+	}
+
 	fs := flag.NewFlagSet("sloggen", flag.ContinueOnError)
 	fs.StringVar(&cfg.path, "config", "", "read config from the file instead of flags")
 	fs.StringVar(&cfg.Pkg, "pkg", "slogx", "the name for the generated package")
