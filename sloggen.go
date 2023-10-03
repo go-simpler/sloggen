@@ -8,7 +8,6 @@ import (
 	"go/format"
 	"io"
 	"log/slog"
-	"os"
 	"slices"
 	"strconv"
 	"strings"
@@ -47,6 +46,7 @@ var (
 // NOTE: when iterating over a map, text/template visits the elements in sorted key order.
 type (
 	config struct {
+		path    string
 		Pkg     string
 		Imports []string
 		Levels  map[int]string // severity:name
@@ -85,12 +85,10 @@ func (c *config) prepare() {
 	c.Imports = slices.Compact(c.Imports)
 }
 
-func readFlags(args []string) (_ *config, err error) {
+func readFlags(args []string) (*config, error) {
 	var cfg config
-	var cfgPath string
-
 	fs := flag.NewFlagSet("sloggen", flag.ContinueOnError)
-	fs.StringVar(&cfgPath, "config", "", "read config from the file instead of flags")
+	fs.StringVar(&cfg.path, "config", "", "read config from the file instead of flags")
 	fs.StringVar(&cfg.Pkg, "pkg", "slogx", "the name for the generated package")
 
 	fs.Func("i", "add import", func(s string) error {
@@ -143,15 +141,6 @@ func readFlags(args []string) (_ *config, err error) {
 
 	if err := fs.Parse(args); err != nil {
 		return nil, fmt.Errorf("parsing flags: %w", err)
-	}
-
-	if cfgPath != "" {
-		f, err := os.Open(cfgPath)
-		if err != nil {
-			return nil, fmt.Errorf("opening config: %w", err)
-		}
-		defer f.Close()
-		return readConfig(f)
 	}
 
 	cfg.prepare()
