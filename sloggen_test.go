@@ -26,6 +26,21 @@ var cfg = config{
 	},
 }
 
+func Test_readFlags(t *testing.T) {
+	args := []string{
+		"-pkg=test",
+		"-i=time",
+		"-l=custom:1",
+		"-c=foo",
+		"-a=bar:time.Time",
+		"-a=baz:time.Duration",
+	}
+
+	got, err := readFlags(args)
+	assert.NoErr[F](t, err)
+	assert.Equal[E](t, got, &cfg)
+}
+
 func Test_readConfig(t *testing.T) {
 	r := strings.NewReader(`
 pkg: test
@@ -123,8 +138,8 @@ func TestExample(t *testing.T) {
 	logger.Alert(ctx, "bar")
 	logger.Log(ctx, level, "baz")
 	assert.Equal[E](t, "\n"+buf.String(), `
-level=INFO source=sloggen_test.go:122 msg=foo group.key=value
-level=ALERT source=sloggen_test.go:123 msg=bar group.key=value
-level=ALERT source=sloggen_test.go:124 msg=baz group.key=value
+level=INFO source=sloggen_test.go:137 msg=foo group.key=value
+level=ALERT source=sloggen_test.go:138 msg=bar group.key=value
+level=ALERT source=sloggen_test.go:139 msg=baz group.key=value
 `)
 }

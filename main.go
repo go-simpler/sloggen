@@ -17,38 +17,37 @@ func main() {
 	}
 }
 
-func run() (err error) {
-	var cfgPath string
-
-	fs := flag.NewFlagSet("sloggen", flag.ContinueOnError)
-	fs.StringVar(&cfgPath, "config", ".slog.yml", "path to config")
-	if err := fs.Parse(os.Args[1:]); err != nil {
+func run() (runErr error) {
+	cfg, err := readFlags(os.Args[1:])
+	if err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return nil
 		}
-		return fmt.Errorf("parsing flags: %w", err)
-	}
-
-	cfgFile, err := os.Open(cfgPath)
-	if err != nil {
-		return fmt.Errorf("opening file: %w", err)
-	}
-	defer errorsx.Close(cfgFile, &err)
-
-	cfg, err := readConfig(cfgFile)
-	if err != nil {
 		return err
 	}
 
+	if cfg.path != "" {
+		cfgFile, err := os.Open(cfg.path)
+		if err != nil {
+			return err
+		}
+		defer errorsx.Close(cfgFile, &runErr)
+
+		cfg, err = readConfig(cfgFile)
+		if err != nil {
+			return err
+		}
+	}
+
 	if err := os.Mkdir(cfg.Pkg, 0o755); err != nil && !errors.Is(err, os.ErrExist) {
-		return fmt.Errorf("mkdir: %w", err)
+		return err
 	}
 
 	genFile, err := os.Create(filepath.Join(cfg.Pkg, cfg.Pkg+".go"))
 	if err != nil {
-		return fmt.Errorf("creating file: %w", err)
+		return err
 	}
-	defer errorsx.Close(genFile, &err)
+	defer errorsx.Close(genFile, &runErr)
 
 	return writeCode(genFile, cfg)
 }
