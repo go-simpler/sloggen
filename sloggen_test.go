@@ -13,7 +13,7 @@ import (
 	"go-simpler.org/sloggen/example"
 )
 
-//go:generate go run main.go sloggen.go --config=.slog.example.yml
+//go:generate go run main.go sloggen.go -config=.slog.example.yml -dir=.
 
 var cfg = config{
 	Pkg:     "test",
