@@ -46,13 +46,13 @@ var (
 // NOTE: when iterating over a map, text/template visits the elements in sorted key order.
 type (
 	config struct {
-		path    string
-		Pkg     string
-		Imports []string
-		Levels  map[int]string // severity:name
-		Consts  []string
-		Attrs   map[string]string // key:type
-		Logger  *logger
+		Pkg       string
+		Imports   []string
+		Levels    map[int]string // severity:name
+		Consts    []string
+		Attrs     map[string]string // key:type
+		Logger    *logger
+		path, dir string // for flags only.
 	}
 	logger struct {
 		Levels  map[int]string
@@ -93,6 +93,7 @@ func readFlags(args []string) (*config, error) {
 
 	fs := flag.NewFlagSet("sloggen", flag.ContinueOnError)
 	fs.StringVar(&cfg.path, "config", "", "read config from the file instead of flags")
+	fs.StringVar(&cfg.dir, "dir", "", "change the working directory before generating files")
 	fs.StringVar(&cfg.Pkg, "pkg", "slogx", "the name for the generated package")
 
 	fs.Func("i", "add import", func(s string) error {

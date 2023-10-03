@@ -26,8 +26,10 @@ func run() (runErr error) {
 		return err
 	}
 
-	if cfg.path != "" {
-		cfgFile, err := os.Open(cfg.path)
+	path, dir := cfg.path, cfg.dir
+
+	if path != "" {
+		cfgFile, err := os.Open(path)
 		if err != nil {
 			return err
 		}
@@ -35,6 +37,12 @@ func run() (runErr error) {
 
 		cfg, err = readConfig(cfgFile)
 		if err != nil {
+			return err
+		}
+	}
+
+	if dir != "" {
+		if err := os.Chdir(dir); err != nil {
 			return err
 		}
 	}
