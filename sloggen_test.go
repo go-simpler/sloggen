@@ -40,7 +40,7 @@ attrs:
   - baz: time.Duration
 `)
 
-	got, err := readConfig(r, nil)
+	got, err := readConfig(r)
 	assert.NoErr[F](t, err)
 	assert.Equal[E](t, got, &cfg)
 }
