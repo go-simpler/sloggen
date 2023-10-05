@@ -13,8 +13,6 @@ import (
 	"go-simpler.org/sloggen/example"
 )
 
-//go:generate go run main.go sloggen.go -config=.slog.example.yml -dir=.
-
 var cfg = config{
 	Pkg:     "test",
 	Imports: []string{"fmt", "log/slog", "strings", "time"},
@@ -138,8 +136,8 @@ func TestExample(t *testing.T) {
 	logger.Alert(ctx, "bar")
 	logger.Log(ctx, level, "baz")
 	assert.Equal[E](t, "\n"+buf.String(), `
-level=INFO source=sloggen_test.go:137 msg=foo group.key=value
-level=ALERT source=sloggen_test.go:138 msg=bar group.key=value
-level=ALERT source=sloggen_test.go:139 msg=baz group.key=value
+level=INFO source=sloggen_test.go:135 msg=foo group.key=value
+level=ALERT source=sloggen_test.go:136 msg=bar group.key=value
+level=ALERT source=sloggen_test.go:137 msg=baz group.key=value
 `)
 }
