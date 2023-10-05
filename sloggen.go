@@ -92,15 +92,33 @@ func readFlags(args []string) (*config, error) {
 	}
 
 	fs := flag.NewFlagSet("sloggen", flag.ContinueOnError)
-	fs.StringVar(&cfg.path, "config", "", "read config from the file instead of flags")
-	fs.StringVar(&cfg.dir, "dir", "", "change the working directory before generating files")
-	fs.StringVar(&cfg.Pkg, "pkg", "slogx", "the name for the generated package")
+	fs.SetOutput(io.Discard)
+	fs.Usage = func() {
+		fmt.Println(`Usage: sloggen [flags]
 
-	fs.Func("i", "add import", func(s string) error {
+Flags:
+	-config <path>       read config from the file instead of flags
+	-dir <path>          change the working directory before generating files
+	-pkg <name>          the name for the generated package (default: slogx)
+	-i <import>          add import
+	-l <name:severity>   add level
+	-c <key>             add constant
+	-a <key:type>        add attribute
+	-logger              generate a custom Logger type
+	-api <any|attr>      the API style for the Logger's methods (default: any)
+	-ctx                 add context.Context to the Logger's methods
+	-h, -help            print this message and quit`)
+	}
+
+	fs.StringVar(&cfg.path, "config", "", "")
+	fs.StringVar(&cfg.dir, "dir", "", "")
+	fs.StringVar(&cfg.Pkg, "pkg", "slogx", "")
+
+	fs.Func("i", "", func(s string) error {
 		cfg.Imports = append(cfg.Imports, s)
 		return nil
 	})
-	fs.Func("l", "add level (name:severity)", func(s string) error {
+	fs.Func("l", "", func(s string) error {
 		parts := strings.Split(s, ":")
 		if len(parts) != 2 {
 			return fmt.Errorf("sloggen: -l=%s: invalid value", s)
@@ -112,11 +130,11 @@ func readFlags(args []string) (*config, error) {
 		cfg.Levels[severity] = parts[0]
 		return nil
 	})
-	fs.Func("c", "add constant", func(s string) error {
+	fs.Func("c", "", func(s string) error {
 		cfg.Consts = append(cfg.Consts, s)
 		return nil
 	})
-	fs.Func("a", "add attribute (key:type)", func(s string) error {
+	fs.Func("a", "", func(s string) error {
 		parts := strings.Split(s, ":")
 		if len(parts) != 2 {
 			return fmt.Errorf("sloggen: -a=%s: invalid value", s)
@@ -124,11 +142,11 @@ func readFlags(args []string) (*config, error) {
 		cfg.Attrs[parts[0]] = parts[1]
 		return nil
 	})
-	fs.BoolFunc("logger", "generate a custom Logger type (default false)", func(string) error {
+	fs.BoolFunc("logger", "", func(string) error {
 		cfg.Logger = new(logger)
 		return nil
 	})
-	fs.Func("api", `the API style for the Logger's methods ("any" | "attr") (default "any")`, func(s string) error {
+	fs.Func("api", "", func(s string) error {
 		if s != "any" && s != "attr" {
 			return fmt.Errorf("sloggen: -api=%s: invalid value", s)
 		}
@@ -137,7 +155,7 @@ func readFlags(args []string) (*config, error) {
 		}
 		return nil
 	})
-	fs.BoolFunc("ctx", "add context.Context to the Logger's methods (default false)", func(string) error {
+	fs.BoolFunc("ctx", "", func(string) error {
 		if cfg.Logger != nil {
 			cfg.Logger.Context = true
 		}
