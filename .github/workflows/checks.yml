@@ -17,17 +17,4 @@ jobs:
   vuln:
     uses: go-simpler/.github/.github/workflows/vuln.yml@main
   generate:
-    runs-on: ubuntu-latest
-    steps:
-      # https://github.com/actions/setup-go
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: stable
-
-      # https://github.com/actions/checkout
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Generate code
-        run: go generate ./... && git diff --exit-code
+    uses: go-simpler/.github/.github/workflows/generate.yml@main
