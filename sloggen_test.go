@@ -84,7 +84,7 @@ func ParseLevel(s string) (slog.Level, error) {
 	}
 }
 
-func ReplaceAttr(_ []string, attr slog.Attr) slog.Attr {
+func RenameLevels(_ []string, attr slog.Attr) slog.Attr {
 	if attr.Key != slog.LevelKey {
 		return attr
 	}
@@ -110,7 +110,7 @@ func TestExample(t *testing.T) {
 			src := attr.Value.Any().(*slog.Source)
 			src.File = filepath.Base(src.File)
 		}
-		return example.ReplaceAttr(groups, attr)
+		return example.RenameLevels(groups, attr)
 	}
 
 	var buf bytes.Buffer
