@@ -29,7 +29,7 @@ func ParseLevel(s string) (slog.Level, error) {
 	}
 }
 
-func ReplaceAttr(_ []string, attr slog.Attr) slog.Attr {
+func RenameLevels(_ []string, attr slog.Attr) slog.Attr {
 	if attr.Key != slog.LevelKey {
 		return attr
 	}
