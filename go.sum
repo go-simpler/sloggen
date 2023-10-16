@@ -1,7 +1,7 @@
 go-simpler.org/assert v0.7.0 h1:OzWWZqfNxt8cLS+MlUp6Tgk1HjPkmgdKBq9qvy8lZsA=
 go-simpler.org/assert v0.7.0/go.mod h1:74Eqh5eI6vCK6Y5l3PI8ZYFXG4Sa+tkr70OIPJAUr28=
-go-simpler.org/errorsx v0.7.0 h1:KtOhEDzn8WzjEwv0qt/TB44gARqBMm3mRehU2H8YMso=
-go-simpler.org/errorsx v0.7.0/go.mod h1:j33G4x0zmHYKTtxq6sX3NJtaOljcDcc2XdK8kp23yTw=
+go-simpler.org/errorsx v0.8.0 h1:grPV5R4OmfZ7bKiZ/X+VKyOOlgPFK0N2AP6TTz+0gCY=
+go-simpler.org/errorsx v0.8.0/go.mod h1:Mh3dw+eRSRHll1apcEmXjSps8K0fAWMaNlGWEnOaiNU=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
