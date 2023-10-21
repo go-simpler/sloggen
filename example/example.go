@@ -10,7 +10,7 @@ import "strings"
 import "time"
 
 const LevelInfo = slog.Level(0)
-const LevelAlert = slog.Level(1)
+const LevelAlert = slog.Level(12)
 
 const RequestId = "request_id"
 
