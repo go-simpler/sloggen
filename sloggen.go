@@ -5,7 +5,6 @@ import (
 	_ "embed"
 	"flag"
 	"fmt"
-	"go/format"
 	"io"
 	"log/slog"
 	"slices"
@@ -13,6 +12,7 @@ import (
 	"strings"
 	"text/template"
 
+	"golang.org/x/tools/imports"
 	"gopkg.in/yaml.v3"
 )
 
@@ -221,7 +221,7 @@ func writeCode(w io.Writer, cfg *config) error {
 	if err := tmpl.Execute(&buf, cfg); err != nil {
 		return fmt.Errorf("executing template: %w", err)
 	}
-	src, err := format.Source(buf.Bytes())
+	src, err := imports.Process("", buf.Bytes(), nil)
 	if err != nil {
 		return fmt.Errorf("formatting code: %w", err)
 	}
