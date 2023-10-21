@@ -2,12 +2,14 @@
 
 package example
 
-import "context"
-import "fmt"
-import "log/slog"
-import "runtime"
-import "strings"
-import "time"
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"runtime"
+	"strings"
+	"time"
+)
 
 const LevelInfo = slog.Level(0)
 const LevelAlert = slog.Level(12)
