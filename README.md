@@ -60,7 +60,8 @@ logger.Alert("msg", "key", "value")
 Additionally, there are options to choose the API style of the arguments (`...any` or `...slog.Attr`) and to add/remove `context.Context` as the first parameter.
 This allows you to adjust the logging API to your own code style without sacrificing convenience.
 
-> 💡 Various API rules for `log/slog` can be enforced by the [`sloglint`][1] linter. Give it a try too!
+> [!TIP]
+> Various API rules for `log/slog` can be enforced by the [`sloglint`][1] linter. Give it a try too!
 
 ## 🚀 Features
 
