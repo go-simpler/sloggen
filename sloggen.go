@@ -62,6 +62,9 @@ type (
 )
 
 func (c *config) prepare() {
+	if c.Pkg == "" {
+		c.Pkg = "slogx"
+	}
 	if len(c.Levels) > 0 {
 		c.Imports = append(c.Imports, "log/slog", "fmt", "strings")
 	}
@@ -97,22 +100,22 @@ func readFlags(args []string) (*config, error) {
 		fmt.Println(`Usage: sloggen [flags]
 
 Flags:
-	-config <path>       read config from the file instead of flags
-	-dir <path>          change the working directory before generating files
-	-pkg <name>          the name for the generated package (default: slogx)
-	-i <import>          add import
-	-l <name:severity>   add level
-	-c <key>             add constant
-	-a <key:type>        add attribute
-	-logger              generate a custom Logger type
-	-api <any|attr>      the API style for the Logger's methods (default: any)
-	-ctx                 add context.Context to the Logger's methods
-	-h, -help            print this message and quit`)
+    -config <path>        read config from the file instead of flags
+    -dir <path>           change the working directory before generating files
+    -pkg <name>           the name for the generated package (default: slogx)
+    -i <import>           add import
+    -l <name:severity>    add level
+    -c <key>              add constant
+    -a <key:type>         add attribute
+    -logger               generate a custom Logger type
+    -api <any|attr>       the API style for the Logger's methods (default: any)
+    -ctx                  add context.Context to the Logger's methods
+    -h, -help             print this message and quit`)
 	}
 
 	fs.StringVar(&cfg.path, "config", "", "")
 	fs.StringVar(&cfg.dir, "dir", "", "")
-	fs.StringVar(&cfg.Pkg, "pkg", "slogx", "")
+	fs.StringVar(&cfg.Pkg, "pkg", "", "")
 
 	fs.Func("i", "", func(s string) error {
 		cfg.Imports = append(cfg.Imports, s)
