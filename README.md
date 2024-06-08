@@ -60,7 +60,7 @@ logger.Alert("msg", "key", "value")
 Additionally, there are options to choose the API style of the arguments (`...any` or `...slog.Attr`) and to add/remove `context.Context` as the first parameter.
 This allows you to adjust the logging API to your own code style without sacrificing convenience.
 
-> [!TIP]
+> [!tip]
 > Various API rules for `log/slog` can be enforced by the [`sloglint`][1] linter. Give it a try too!
 
 ## 🚀 Features
@@ -166,17 +166,17 @@ slog.New(logger.Handler())
 Usage: sloggen [flags]
 
 Flags:
-    -config <path>       read config from the file instead of flags
-    -dir <path>          change the working directory before generating files
-    -pkg <name>          the name for the generated package (default: slogx)
-    -i <import>          add import
-    -l <name:severity>   add level
-    -c <key>             add constant
-    -a <key:type>        add attribute
-    -logger              generate a custom Logger type
-    -api <any|attr>      the API style for the Logger's methods (default: any)
-    -ctx                 add context.Context to the Logger's methods
-    -h, -help            print this message and quit
+    -config <path>        read config from the file instead of flags
+    -dir <path>           change the working directory before generating files
+    -pkg <name>           the name for the generated package (default: slogx)
+    -i <import>           add import
+    -l <name:severity>    add level
+    -c <key>              add constant
+    -a <key:type>         add attribute
+    -logger               generate a custom Logger type
+    -api <any|attr>       the API style for the Logger's methods (default: any)
+    -ctx                  add context.Context to the Logger's methods
+    -h, -help             print this message and quit
 ```
 
 For the description of the config file fields, see [`.slog.example.yml`](.slog.example.yml).
