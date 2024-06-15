@@ -5,7 +5,7 @@
 [![goreportcard](https://goreportcard.com/badge/go-simpler.org/sloggen)](https://goreportcard.com/report/go-simpler.org/sloggen)
 [![codecov](https://codecov.io/gh/go-simpler/sloggen/branch/main/graph/badge.svg)](https://codecov.io/gh/go-simpler/sloggen)
 
-Generate various helpers for `log/slog`.
+Generate domain-specific wrappers for `log/slog`.
 
 ## 📌 About
 
